@@ -1,4 +1,4 @@
-# DRD6 WP2: Noble Liquid Calorimeters for Future Colliders
+# DRDCalo WP2: Noble Liquid Calorimeters for Future Colliders
 
 This repository hosts code and recipes relevant for the DRDCalo work package 2 (Noble Liquid Calorimetry) activities. If you want to know how to update the sampling fractions, re-train the ML based calibration, etc, you are at the right place!
 
