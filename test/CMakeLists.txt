@@ -30,7 +30,7 @@ add_test(NAME HelloWorldAlg
                COMMAND k4run k4ProjectTemplate/options/createHelloWorld.py)
 
 add_test(NAME ctest_ECal_calib
-               COMMAND ../ALLEGRO/test/ctest_ECal_calib.sh)
+               COMMAND pwd; ../ALLEGRO/test/ctest_ECal_calib.sh)
 	       
 	     
 # For LD_LIBRARY_PATH
