@@ -31,7 +31,7 @@ add_test(NAME HelloWorldAlg
 
 add_test(NAME ctest_ECal_calib
 	       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-               COMMAND source ctest_ECal_Calib.sh)
+               COMMAND ./ctest_ECal_Calib.sh)
 	       
 	     
 # For LD_LIBRARY_PATH
