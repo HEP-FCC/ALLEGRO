@@ -10,5 +10,5 @@ fi
 #get the reco output file needed for calibration
 wget https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/forTests/allegro_v03_ecal_v52_evts_1000_pdg_11_MomentumMinMax_40_40_GeV_ThetaMinMax_5.2_40.0_PhiMinMax_0_6.28_0_digi_reco.root
 
-root -l ctest_ECal_calib.C -b -q
+root -l test/ctest_ECal_calib.C -b -q
 
