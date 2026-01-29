@@ -19,7 +19,7 @@ Currently, there are four types of cross-talk neighbours: direct radial, direct 
 The four cross-talk coefficients are configurable properties that can be modified in `runCaloXTalkNeighbours.py`: `xtalkCoefRadial`, `xtalkCoefTheta`, `xtalkCoefDiagonal` and `xtalkCoefTower`.
 
 To define additional type of crosstalk neighbours the user should
-* clone locally the k4geo and k4RecCalorimeter packages
+* clone locally the [k4geo](https://github.com/key4hep/k4geo) and [k4RecCalorimeter](https://github.com/HEP-FCC/k4RecCalorimeter) packages
 * modify the files
 ```
 xtalk_neighbors_moduleThetaMergedSegmentation.h
