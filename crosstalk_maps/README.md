@@ -1,27 +1,36 @@
 # Recipes to update the crosstalk maps
 
 ## Barrel
-1. *Define types of cross-talk neighbours in*
+Crosstalk maps are created with the `runCaloXTalkNeighbours.py` script by executing
 
-  xtalk_neighbors_moduleThetaMergedSegmentation.cpp
+`k4run runCaloXTalkNeighbours.py`
 
-  Currently, there are four types of cross-talk neighbours: direct radial, direct theta, diagonal and theta tower (between signal traces and cells).
-  Any update of "xtalk_neighbors_moduleThetaMergedSegmentation.cpp" and "xtalk_neighbors_moduleThetaMergedSegmentation.h" should be pushed to the k4geo repository: https://github.com/key4hep/k4geo/tree/main/detectorCommon/include/detectorCommon and https://github.com/key4hep/k4geo/tree/main/detectorCommon/src
-  
+after having setup the key4hep stack with e.g.
 
-2. *Functions for the generation of the barrel region cross-talk map are included in*
+`source /cvmfs/sw-nightlies.hsf.org/k4hep/setup.sh`
 
-   CreateFCCeeCaloXTalkNeighbours.cpp
+The default output file is "xtalk_neighbours_map_ecalB_thetamodulemerged.root", in which the cross-talk neighbours and coefficients are saved for each cell.
 
-   Any update of "CreateFCCeeCaloXTalkNeighbours.cpp" and "CreateFCCeeCaloXTalkNeighbours.h" should be pushed to the k4RecCalorimeter repository: https://github.com/HEP-FCC/k4RecCalorimeter/tree/main/RecFCCeeCalorimeter/src/components
+The code relies on
+* types of cross-talk neighbours, defined in the files "xtalk_neighbors_moduleThetaMergedSegmentation.h" and "xtalk_neighbors_moduleThetaMergedSegmentation.cpp" in the k4geo package, in the directories https://github.com/key4hep/k4geo/tree/main/detectorCommon/include/detectorCommon and https://github.com/key4hep/k4geo/tree/main/detectorCommon/src
+* functions for the generation of the barrel region cross-talk map, implemented in "CreateFCCeeCaloXTalkNeighbours.h" and "CreateFCCeeCaloXTalkNeighbours.cpp" in the k4RecCalorimeter package, in the directory https://github.com/HEP-FCC/k4RecCalorimeter/tree/main/RecFCCeeCalorimeter/src/components
 
-3. **Generate the cross-talk map by running**
+Currently, there are four types of cross-talk neighbours: direct radial, direct theta, diagonal and theta tower (between signal traces and cells).
+The four cross-talk coefficients are configurable properties that can be modified in `runCaloXTalkNeighbours.py`: xtalkCoefRadial, xtalkCoefTheta, xtalkCoefDiagonal and xtalkCoefTower.
 
-  `k4run runCaloXTalkNeighbours.py`
+To define additional type of crosstalk neighbours the user should
+* clone locally the k4geo and k4RecCalorimeter packages
+* modify the files
+```
+xtalk_neighbors_moduleThetaMergedSegmentation.h
+xtalk_neighbors_moduleThetaMergedSegmentation.cpp
+CreateFCCeeCaloXTalkNeighbours.h
+CreateFCCeeCaloXTalkNeighbours.cpp
+runCaloXTalkNeighbours.py
+```
+* setup the environment and compile
+* execute the `runCaloXTalkNeighbours.py` script
 
-  The four cross-talk coefficients are configurable: xtalkCoefRadial, xtalkCoefTheta, xtalkCoefDiagonal and xtalkCoefTower.
-
-  The default output file is "xtalk_neighbours_map_ecalB_thetamodulemerged.root", in which the cross-talk neighbours and coefficients are saved for each cell.
 
 ## Endcap
 
