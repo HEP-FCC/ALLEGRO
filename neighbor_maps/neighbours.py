@@ -10,6 +10,16 @@
 #                                        connectBarrels=False,
 #                                        connectHCal=False,
 #                                        connectECal=False,
+#
+# hcal: do we need this?
+#                                            activeVolumesTheta=[
+#                                                [],
+#                                                [
+#                                                    0.788969, 0.797785, 0.806444, 0.814950, 0.823304,
+#                                                    0.839573, 0.855273, 0.870425, 0.885051, 0.899172,
+#                                                    0.912809, 0.938708, 0.962896
+#                                                ]
+#                                            ],
 
 #
 # parse command line options
@@ -139,27 +149,6 @@ neighbours = CreateFCCeeCaloNeighbours("neighbours",
                                        connectHCal=connectHCal,
                                        OutputLevel=DEBUG)
 
-# if doHCal:
-#     # create the neighbour file for ECAL+HCAL barrel cells
-#     neighbours = CreateFCCeeCaloNeighbours("neighbours",
-#                                            outputFileName="neighbours_map_ecalB_thetamodulemerged_hcalB_thetaphi.root",
-#                                            readoutNames=[
-#                                                "ECalBarrelModuleThetaMerged", "BarHCal_Readout_phitheta"],
-#                                            systemNames=["system", "system"],
-#                                            systemValues=[4, 8],
-#                                            activeFieldNames=["layer", "layer"],
-#                                            activeVolumesNumbers=[ecalBarrelNumLayers, hcalBarrelNumLayers],
-#                                            activeVolumesTheta=[
-#                                                [],
-#                                                [
-#                                                    0.788969, 0.797785, 0.806444, 0.814950, 0.823304,
-#                                                    0.839573, 0.855273, 0.870425, 0.885051, 0.899172,
-#                                                    0.912809, 0.938708, 0.962896
-#                                                ]
-#                                            ],
-#                                            includeDiagonalCells=False,
-#                                            connectBarrels=connectECalHCalBarrels,
-#                                            OutputLevel=DEBUG)
 
 
 # configure the application
