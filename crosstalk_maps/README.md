@@ -9,7 +9,7 @@ after having setup the key4hep stack with e.g.
 
 `source /cvmfs/sw-nightlies.hsf.org/k4hep/setup.sh`
 
-The default output file is `xtalk_neighbours_map_ecalB_thetamodulemerged.root`, in which the cross-talk neighbours and coefficients are saved for each cell.
+The default output file is `xtalk_neighbours_map_ecalB.root`, in which the cross-talk neighbours and coefficients are saved for each cell.
 
 The code relies on
 * types of cross-talk neighbours, defined in the files [xtalk_neighbors_moduleThetaMergedSegmentation.h](https://github.com/key4hep/k4geo/tree/main/detectorCommon/include/detectorCommon/xtalk_neighbors_moduleThetaMergedSegmentation.h) and [xtalk_neighbors_moduleThetaMergedSegmentation.cpp](https://github.com/key4hep/k4geo/tree/main/detectorCommon/src/xtalk_neighbors_moduleThetaMergedSegmentation.cpp) in the k4geo package
