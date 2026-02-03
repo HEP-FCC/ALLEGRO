@@ -29,6 +29,7 @@ detector = dd4hep.Detector.getInstance()
 detector.fromXML(detectorFile)
 print("Loaded detector from compact file:", detectorFile)
 
+
 # ------------------------------------------------------------------
 # Loop over cellIDs
 # ------------------------------------------------------------------
@@ -55,6 +56,7 @@ for cellID in cellIDs:
     # Get readout (use caching)
     if readoutName != previous_readout:
         readout = detector.readout(readoutName)
+        seg = readout.segmentation()
         encoding = readout.idSpec().fieldDescription()
         coder = ROOT.dd4hep.BitFieldCoder(encoding)
         previous_readout = readoutName
@@ -62,9 +64,13 @@ for cellID in cellIDs:
     print("System:", system)
     print("Readout:", readoutName)
     print("CellID encoding:", encoding)
-
+    position = seg.position(cellID)
+    print(f"Position (rho/theta/phi): {position.rho()}, {position.theta()}, {position.phi()}")
+    print(f"Position (rho/z/phi): {position.rho()}, {position.z()}, {position.phi()}")
     # Decode and print all fields
     for field in coder.fields():
         name = field.name()
         value = coder.get(cellID, name)
         print(f"{name}: {value}")
+
+

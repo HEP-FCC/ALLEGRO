@@ -9,9 +9,9 @@ from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(
-    description="Compare noise or neighbour maps between two files"
+    description="Compare noise, neighbour or cross-talk neighbour maps between two files"
 )
-parser.add_argument("maptype", type=str, help="Either noise or neighbour")
+parser.add_argument("maptype", type=str, help="Either noise, neighbour or xtalk")
 parser.add_argument("file1", type=str, help="The first file to compare")
 parser.add_argument("file2", type=str, help="The second file to compare")
 parser.add_argument(
@@ -81,8 +81,7 @@ else:
 if nevts>0:
     total_entries = min(total_entries, nevts)
 
-# standard search: same number of entries, assume sorted in same way
-if not ignoreCounts:
+if not ignoreCounts:       # standard search: same number of entries, assume sorted in same way
     # initialise counters
     badEntries = []
     file1Values = {}
@@ -147,7 +146,7 @@ if not ignoreCounts:
                 for branch in branchList:
                     print(branch, file2Values[branch][i])
 
-else:
+else:    # compare entries by looking for same cellId in two trees
     # index second tree by the key (cellId) for fast lookup
     index2 = {}
     for j in range(tree2.GetEntries()):
