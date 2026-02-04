@@ -9,7 +9,7 @@ fi
 printenv
 
 # create the neighbour map
-k4run neighbor_maps/neighbours.py --ecalb --ecalec --hcalb --hcalec --link-calos --link-ecal --link-hcal
+k4run neighbor_maps/neighbours.py --ecalb --ecalec --hcalb --hcalec --link-calos --link-hcal
 
 # for debug: compare to the one in the repository
 echo "Comparing new map to reference one. If the test fails, you might need to update the reference"
