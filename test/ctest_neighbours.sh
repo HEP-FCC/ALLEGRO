@@ -6,6 +6,7 @@ if [[ -z "${KEY4HEP_STACK}" ]]; then
 else
   echo "The Key4hep stack was already loaded in this environment."
 fi
+printenv
 
 # create the neighbour map
 k4run neighbor_maps/neighbours.py --ecalb --ecalec --hcalb --hcalec --link-calos --link-ecal --link-hcal
