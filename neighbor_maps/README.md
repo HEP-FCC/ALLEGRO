@@ -20,7 +20,3 @@ For debugging, i.e. to compare two map files (number of entries and content), th
 
 The script uses the CreateFCCeeCaloNeighbours algorithm implemented in [CreateFCCeeCaloNeighbours.h](https://github.com/HEP-FCC/k4RecCalorimeter/blob/main/RecFCCeeCalorimeter/src/components/CreateFCCeeCaloNeighbours.h) and [CreateFCCeeCaloNeighbours.cpp](https://github.com/HEP-FCC/k4RecCalorimeter/blob/main/RecFCCeeCalorimeter/src/components/CreateFCCeeCaloNeighbours.cpp).
 The algorithm itself relies on the methods returning number of cells and neighbour lists within a given readout for the various segmentation classes om [DetUtils_k4geo.cpp](https://github.com/key4hep/k4geo/blob/main/detectorCommon/src/DetUtils_k4geo.cpp) and some additional logic to find neighbours among different segmentations (e.g. barrel vs endcap, or ecal vs hcal).
-
-TODO:
-* understand why neighbour map for HCAL is slightly different from the one in central repository (-> recent small HCAL modifications to fix overlaps?)
-* understand why code crashes with --link-ecal option
