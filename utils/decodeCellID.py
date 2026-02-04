@@ -8,6 +8,29 @@ systemEEC = 5
 systemHB = 8
 systemHEC = 9
 
+# maps for caching
+readoutMap = {}
+segMap = {}
+encodingMap = {}
+coderMap = {}
+
+# ------------------------------------------------------------------
+# Return readout name for given system
+# ------------------------------------------------------------------
+def readoutStr(system):
+    if system==systemEB:
+        readoutName = "ECalBarrelModuleThetaMerged"
+    elif system==systemEEC:
+        readoutName = "ECalEndcapTurbine"
+    elif system==systemHB:
+        readoutName = "HCalBarrelReadout"
+    elif system==systemHEC:
+        readoutName = "HCalEndcapReadout"
+    else:
+        print("Unknown system", system)
+        readoutName = ""
+    return readoutName
+
 # ------------------------------------------------------------------
 # Parse cellIDs from command line (space-separated)
 # ------------------------------------------------------------------
@@ -28,7 +51,24 @@ detectorFile = path_to_detector + "/" + compactFile
 detector = dd4hep.Detector.getInstance()
 detector.fromXML(detectorFile)
 print("Loaded detector from compact file:", detectorFile)
+volman = detector.volumeManager()
 
+ 
+# ------------------------------------------------------------------
+# Read encoding maps before loop, so that INFO messages from
+# segmentation classes do not pollute output later
+# ------------------------------------------------------------------
+systems = [systemEB, systemEEC, systemHB, systemHEC]
+for system in systems:
+    readoutMap[system] = detector.readout(readoutStr(system))
+    segMap[system] = readoutMap[system].segmentation()
+    encodingMap[system] = readoutMap[system].idSpec().fieldDescription()
+    coderMap[system] = ROOT.dd4hep.BitFieldCoder(encodingMap[system])
+    # to initialise layer info for Ecal barrel now
+    if (system==systemEB):
+        volumeID = system
+        _ = segMap[system].position(volumeID)
+        
 
 # ------------------------------------------------------------------
 # Loop over cellIDs
@@ -41,30 +81,39 @@ for cellID in cellIDs:
 
     # Get system
     system = cellID & 0b11111
-    if system==systemEB:
-        readoutName = "ECalBarrelModuleThetaMerged"
-    elif system==systemEEC:
-        readoutName = "ECalEndcapTurbine"
-    elif system==systemHB:
-        readoutName = "HCalBarrelReadout"
-    elif system==systemHEC:
-        readoutName = "HCalEndcapReadout"
-    else:
-        print("Unknown system", system)
-        continue
+    readoutName = readoutStr(system)
+    if readoutName == "": continue
 
     # Get readout (use caching)
     if readoutName != previous_readout:
-        readout = detector.readout(readoutName)
-        seg = readout.segmentation()
-        encoding = readout.idSpec().fieldDescription()
-        coder = ROOT.dd4hep.BitFieldCoder(encoding)
+        if system in readoutMap:
+            readout = readoutMap[system]
+            seg = segMap[system]
+            encoding = encodingMap[system]
+            coder = coderMap[system]
+        else:
+            readout = detector.readout(readoutName)
+            seg = readout.segmentation()
+            encoding = readout.idSpec().fieldDescription()
+            coder = ROOT.dd4hep.BitFieldCoder(encoding)
+            readoutMap[system] = readout
+            segMap[system] = seg
+            encodingMap[system] = encoding
+            coderMap[system] = coder
         previous_readout = readoutName
 
     print("System:", system)
     print("Readout:", readoutName)
     print("CellID encoding:", encoding)
-    position = seg.position(cellID)
+    if (system!=systemEB):
+        position = seg.position(cellID)
+    else:
+        volumeID = seg.volumeID(cellID);
+        # print("volumeID:", volumeID)
+        vc = volman.lookupContext(volumeID);
+        inSeg = seg.position(cellID);
+        outSeg = vc.localToWorld(inSeg);
+        position = outSeg
     print(f"Position (rho/theta/phi): {position.rho()}, {position.theta()}, {position.phi()}")
     print(f"Position (rho/z/phi): {position.rho()}, {position.z()}, {position.phi()}")
     # Decode and print all fields
