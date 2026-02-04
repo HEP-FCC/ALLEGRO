@@ -6,10 +6,11 @@ if [[ -z "${KEY4HEP_STACK}" ]]; then
 else
   echo "The Key4hep stack was already loaded in this environment."
 fi
-printenv
+# for debug
+# printenv
 
 # create the neighbour map
-k4run neighbor_maps/neighbours.py --ecalb --ecalec --hcalb --hcalec --link-calos --link-hcal
+k4run neighbor_maps/neighbours.py --ecalb --ecalec --hcalb --hcalec --link-calos --link-ecal --link-hcal
 
 # for debug: compare to the one in the repository
 echo "Comparing new map to reference one. If the test fails, you might need to update the reference"
