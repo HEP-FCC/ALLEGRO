@@ -19,7 +19,7 @@ geoservice.OutputLevel = INFO
 
 # create the crosstalk neighbour file for ECAL barrel cells
 neighbours = CreateFCCeeCaloXTalkNeighbours("xtalk_neighbours",
-                                       outputFileName="xtalk_neighbours_map_ecalB_thetamodulemerged.root",
+                                       outputFileName="xtalk_neighbours_map_ecalB.root",
                                        readoutNames=["ECalBarrelModuleThetaMerged"],
                                        systemNames=["system"],
                                        systemValues=[4],

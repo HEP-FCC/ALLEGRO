@@ -35,6 +35,7 @@ parser.add_argument("--link-ecal", action="store_true", help="link ECAL barrel+e
 parser.add_argument("--link-hcal", action="store_true", help="link HCAL barrel+endcap")
 parser.add_argument("--diagonal-ecal", action="store_true", help="include diagonal cells for ECal")
 parser.add_argument("--diagonal-hcal", action="store_true", help="include diagonal cells for HCal")
+parser.add_argument("--debug", action="store_true", help="turn on debug output")
 
 myopts = parser.parse_known_args()[0]
 doECalB = myopts.ecalb
@@ -46,7 +47,7 @@ connectECal = myopts.link_ecal
 connectHCal = myopts.link_hcal
 includeDiagonalCells = myopts.diagonal_ecal
 includeDiagonalCellsHCal = myopts.diagonal_hcal
-
+debug = myopts.debug
 
 #
 # some constants
@@ -146,9 +147,11 @@ neighbours = CreateFCCeeCaloNeighbours("neighbours",
                                        includeDiagonalCellsHCal=includeDiagonalCellsHCal,
                                        connectBarrels=connectBarrels,
                                        connectECal=connectECal,
-                                       connectHCal=connectHCal,
-                                       OutputLevel=DEBUG)
-
+                                       connectHCal=connectHCal)
+if debug:
+    neighbours.OutputLevel=DEBUG
+else:
+    neighbours.OutputLevel=INFO
 
 
 # configure the application
