@@ -145,6 +145,8 @@ if not ignoreCounts:       # standard search: same number of entries, assume sor
                 print("File 2:")
                 for branch in branchList:
                     print(branch, file2Values[branch][i])
+    if len(badEntries)>0:
+        sys.exit(1)
 
 else:    # compare entries by looking for same cellId in two trees
     # index second tree by the key (cellId) for fast lookup
@@ -247,5 +249,8 @@ else:    # compare entries by looking for same cellId in two trees
                 val1 = getattr(tree1, branch)
                 val2 = getattr(tree2, branch)
                 print(f"{branch}: old={tree1}  new={tree2}")
+
+    if len(badEntries)>0:
+        sys.exit(1)
 
 print("")
