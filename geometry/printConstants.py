@@ -6,6 +6,12 @@ import ROOT
 import dd4hep
 import os
 import sys
+import argparse
+
+parser = argparse.ArgumentParser(
+        description="Print selected constants from a DD4hep compact file. Enable/disable the subdetectors in the elementsToShow list"
+    )
+parser.parse_args()
 
 # elements to skip at parsing time
 elementsToSkip = []
