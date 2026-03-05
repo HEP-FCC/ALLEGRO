@@ -39,7 +39,7 @@ Some plots are also produced in the folder plots_sampling_fraction
 
 **Notes/caveats**:  The extraction of the sampling fractions tends to not be as reliable for the endcap as the barrel.  This is because each cluster essentually deposits some energy in all of the calibration layers of the barrel (since the layers are arranged in depth), but that is not the case for the endcap, where layers are arranged in both depth and in the rho coordinate.  This means that most layers are empty for any one given cluster, leading to a large low-side tail in the sampling fraction plots that can make the fit unreliable.  It is generally the case that using the sampling fractions as calibration constants allows one to reconstruct the correct cluster energy to within 1% for the barrel; for the endcap the variation is closer to 10%.  So for precise studies of the endcap performance, the empirical determination of calibration constants described below is preferable. 
 
-### Empricial determination of calibration constants
+### Empirical determination of calibration constants
 
 For this procedure, one generates a large set of single-particle events (single photons may be best, as they are not affected by the B field). After having cloned k4geo and FCC-config, remove/comment the upstream detectors from the main xml (so that the performance of the endcap calorimeter can be isolated)
 ```
