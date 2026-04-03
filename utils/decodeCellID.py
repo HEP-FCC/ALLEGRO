@@ -50,8 +50,10 @@ path_to_detector = os.environ.get("K4GEO", "")
 detectorFile = path_to_detector + "/" + compactFile
 detector = dd4hep.Detector.getInstance()
 detector.fromXML(detectorFile)
-print("Loaded detector from compact file:", detectorFile)
 volman = detector.volumeManager()
+print("\n" + "="*60)
+print("\nLoaded detector from compact file:", detectorFile)
+print("")
 
  
 # ------------------------------------------------------------------
@@ -68,7 +70,12 @@ for system in systems:
     if (system==systemEB):
         volumeID = system
         _ = segMap[system].position(volumeID)
-        
+
+print("\n" + "="*60)
+print("\nLoaded encoding maps:")
+print("{:8s} {:30s} {:s}".format("System","readout","encoding"))
+for system in systems:
+    print("{:<8d} {:30s} {:s}".format(system, readoutStr(system), encodingMap[system]))
 
 # ------------------------------------------------------------------
 # Loop over cellIDs
@@ -76,30 +83,23 @@ for system in systems:
 previous_readout = ""
 coder = None
 for cellID in cellIDs:
-    print("\n====================================")
+    print("\n" + "="*60)
     print("CellID:", hex(cellID), f"({cellID})")
 
     # Get system
-    system = cellID & 0b11111
+    # 5 bits
+    # system = cellID & 0b11111
+    # 4 bits
+    system = cellID & 0b1111
     readoutName = readoutStr(system)
     if readoutName == "": continue
 
     # Get readout (use caching)
     if readoutName != previous_readout:
-        if system in readoutMap:
-            readout = readoutMap[system]
-            seg = segMap[system]
-            encoding = encodingMap[system]
-            coder = coderMap[system]
-        else:
-            readout = detector.readout(readoutName)
-            seg = readout.segmentation()
-            encoding = readout.idSpec().fieldDescription()
-            coder = ROOT.dd4hep.BitFieldCoder(encoding)
-            readoutMap[system] = readout
-            segMap[system] = seg
-            encodingMap[system] = encoding
-            coderMap[system] = coder
+        readout = readoutMap[system]
+        seg = segMap[system]
+        encoding = encodingMap[system]
+        coder = coderMap[system]
         previous_readout = readoutName
 
     print("System:", system)
