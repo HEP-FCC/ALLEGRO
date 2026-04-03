@@ -8,6 +8,7 @@ import ROOT
 import dd4hep
 import os
 import sys
+import argparse
 
 # ================================
 # CONFIG
@@ -37,15 +38,14 @@ defaultEncodingMap = {
     9 : "system:0:4,type:4:3,layer:7:6,row:13:11,theta:24:11,phi:35:10"
 }
 
-# filenameNeighbours = "neighbours_map_HCalBarrel.root"
-filenameNeighbours = "../neighbours_map_ecalB_layer3.root"
+# default files
+defaultFilenameNeighbours = "neighbours_map_HCalBarrel.root"
+defaultFilenameNoise = "cellNoise_map_electronicsNoiseLevel_ecalB_thetamodulemerged_hcalB_thetaphi.root"
 treenameNeighbours = "neighbours"
-
-filenameNoise = "cellNoise_map_electronicsNoiseLevel_ecalB_thetamodulemerged_hcalB_thetaphi.root"
 treenameNoise = "noisyCells"
 
 # geometry file (if enconding is to be read from the xml file)
-compactFile = "FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml"
+defaultCompactFile = "FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml"
 
 
 # ====================================
@@ -64,25 +64,21 @@ coderMap = {}
 
 
 # ================================
-# LOAD ENCODERS
+# Load decoders
 # ================================
-def readCodersFromXML():
+def readCodersFromXML(compactFile):
     path_to_detector = os.environ.get("K4GEO", "")
     detectorFile = path_to_detector + "/" + compactFile
     det = dd4hep.Detector.getInstance()
     det.fromXML(detectorFile)
     for system in systems:
         readout = det.readout(readoutStr(system))
-        # segmentation = readout.segmentation()
-        # encoding = readout.idSpec().fieldDescription()
-        # coderMap[system] = ROOT.dd4hep.BitFieldCoder(encodingMap)
-        # or just
         coderMap[system] = readout.idSpec().decoder()
 
-def loadCoders(readFromFile=False):
+def loadCoders(readFromFile=False, compactFile=""):
     if readFromFile:
         print("Reading encoding from compact files")
-        readCodersFromXML()
+        readCodersFromXML(compactFile)
     else:
         print("Using default encodings")
         for system in systems:
@@ -96,35 +92,8 @@ def loadCoders(readFromFile=False):
     print("\n" + "="*60)
 
 
-loadCoders()
-
-
 # ================================
-# LOAD TREES
-# ================================
-
-fNeighbours = ROOT.TFile.Open(filenameNeighbours)
-TNeighbours = fNeighbours.Get(treenameNeighbours)
-
-neighbours = ROOT.std.vector('unsigned long')()
-TNeighbours.SetBranchAddress("neighbours", neighbours)
-
-# Noise
-fNoise = None
-TNoise = None
-
-# ROOT.TFile.Open(filenameNoise)
-# TNoise = fNoise.Get(treenameNoise)
-
-#cIDNoise = ROOT.ULong64_t()
-#noiseLevel = ROOT.Double()
-#noiseOffset = ROOT.Double()
-#TNoise.SetBranchAddress("cellId", cIDNoise)
-#TNoise.SetBranchAddress("noiseLevel", noiseLevel)
-#TNoise.SetBranchAddress("noiseOffset", noiseOffset)
-
-# ================================
-# HELPER
+# Decode cell information
 # ================================
 previous_system = 0
 coder = None
@@ -133,7 +102,10 @@ def decode(cellID):
     """Return dict with all fields"""
 
     # Get system
-    system = cellID & 0b11111
+    # 5 bits
+    # system = cellID & 0b11111
+    # 4 bits
+    system = cellID & 0b1111
     readoutName = readoutStr(system)
     if readoutName == "": return
 
@@ -155,6 +127,9 @@ def decode(cellID):
     return fields
 
 
+# =============================================
+# Print information for cell with given cell ID
+# =============================================
 def print_cell(cellID):
     print("cellID:", int(cellID))
 
@@ -166,10 +141,9 @@ def print_cell(cellID):
     print()
 
 
-# ================================
-# CORE FUNCTIONS
-# ================================
-
+# =======================================
+# Print cell with position iEntry in tree
+# =======================================
 def print_entry(iEntry, showNeighbours=True, showNoise=False):
     TNeighbours.GetEntry(iEntry)
 
@@ -198,6 +172,9 @@ def print_entry(iEntry, showNeighbours=True, showNoise=False):
     print("="*50)
 
 
+# =========================================
+# Loop over neighbours and print their info
+# =========================================
 def print_neighbours_of_cell(cellID):
     for i in range(TNeighbours.GetEntries()):
         TNeighbours.GetEntry(i)
@@ -209,6 +186,9 @@ def print_neighbours_of_cell(cellID):
     print("CellID not found")
 
 
+# =========================================
+# Print info about n random cells
+# =========================================
 def print_random(n=10):
     import random
     nEntries = TNeighbours.GetEntries()
@@ -217,5 +197,61 @@ def print_random(n=10):
         i = random.randint(0, nEntries-1)
         print_entry(i, True, False)
 
-# print_random()
-print_neighbours_of_cell(12884905988)
+
+    
+# ================================
+# parse arguments
+# ================================
+
+parser = argparse.ArgumentParser(description="Print cell info")
+parser.add_argument("--neighbours-file", default=defaultFilenameNeighbours)
+parser.add_argument("--noise", action="store_true",
+                    help="Print noise info")
+parser.add_argument("--noise-file", default=defaultFilenameNoise)
+parser.add_argument("--read-xml", action="store_true",
+                    help="Read encoding from compact file")
+parser.add_argument("--xml-file", default=defaultCompactFile)
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("--cells",
+                   help="Comma-separated list of cellIDs")
+group.add_argument("--random", type=int,
+                   help="Print N random entries")
+args = parser.parse_args()
+filenameNeighbours = args.neighbours_file
+filenameNoise = args.noise_file
+compactFile = args.xml_file
+
+
+# ================================
+# Load encoders
+# ================================
+loadCoders(args.read_xml, compactFile)
+
+
+# ================================
+# Load trees
+# ================================
+
+fNeighbours = ROOT.TFile.Open(filenameNeighbours)
+TNeighbours = fNeighbours.Get(treenameNeighbours)
+
+neighbours = ROOT.std.vector('unsigned long')()
+TNeighbours.SetBranchAddress("neighbours", neighbours)
+
+fNoise = None
+TNoise = None
+if args.noise:
+    fNoise = ROOT.TFile.Open(filenameNoise)
+    TNoise = fNoise.Get(treenameNoise)
+
+
+# ================================
+# Print cell info
+# ================================
+if args.cells:
+    cell_list = [int(x) for x in args.cells.split(",")]
+    print_cells(cell_list)
+elif args.random:
+    print_random(args.random)
+else:
+    print("ERROR: specify --cells or --random")

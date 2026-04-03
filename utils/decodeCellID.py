@@ -87,7 +87,10 @@ for cellID in cellIDs:
     print("CellID:", hex(cellID), f"({cellID})")
 
     # Get system
-    system = cellID & 0b11111
+    # 5 bits
+    # system = cellID & 0b11111
+    # 4 bits
+    system = cellID & 0b1111
     readoutName = readoutStr(system)
     if readoutName == "": continue
 
