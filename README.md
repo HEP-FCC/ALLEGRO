@@ -4,7 +4,7 @@ This repository hosts "expert" code and recipes for the ALLEGRO detector, for in
 
 ## Set-up
 
-Most of the codes here can be ran atfer sourcing Key4hep:
+Most of the codes here can be ran after sourcing Key4hep:
 
 ``` bash
 source /cvmfs/sw-nightlies.hsf.org/key4hep/setup.sh
