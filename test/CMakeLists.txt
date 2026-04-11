@@ -32,6 +32,10 @@ add_test(NAME HelloWorldAlg
 add_test(NAME ctest_turbineECalEndcap_calib
                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                COMMAND test/ctest_turbineECalEndcap_calib.sh)
+	       
+add_test(NAME ctest_turbineECalEndcap_noise
+	       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+               COMMAND test/ctest_turbineECalEndcap_noise.sh)
 
 add_test(NAME ctest_neighbours
                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
