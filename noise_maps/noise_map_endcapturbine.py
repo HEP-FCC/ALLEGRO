@@ -26,6 +26,9 @@ from Configurables import CreateFCCeeCaloNoiseLevelMap
 from Configurables import NoiseCaloCellsTurbineEndcapFromFileTool
 
 endcapNoiseFile =    "./noise_capa_ecalendcap/elecNoise_ecalendcap.root"
+if not os.path.isfile(endcapNoiseFile):
+    print(f"Error: noise file '{endcapNoiseFile}' does not exist.", file=sys.stderr)
+    sys.exit(1)
 
 eCalEndcapNoiseTool = NoiseCaloCellsTurbineEndcapFromFileTool("NoiseCaloCellsTurbineEndcapFromFileTool",
                                                               noiseFileName=endcapNoiseFile,
