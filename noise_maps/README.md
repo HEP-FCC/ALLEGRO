@@ -60,6 +60,6 @@ The output is `noise_capa_ecalendcap/elecNoise_ecalendcap.root`.
 
 Create the noise map file that can be used in reconstruction.
 
-```k4run noise_map_endcapturbine.py FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml```
+```k4run noise_map_endcapturbine.py --compactFile FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml```
  
 The output is `cellNoise_map_endcapTurbine_electronicsNoiseLevel.root`.

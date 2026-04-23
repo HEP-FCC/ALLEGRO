@@ -11,6 +11,12 @@ args = parser.parse_args()
 
 path_to_detector = os.environ.get("K4GEO", "")
 detectorFile = path_to_detector + "/" + args.compactFile
+
+# check that file exists
+if not os.path.isfile(detectorFile):
+    print(f"Error: compact file '{detectorFile}' does not exist.", file=sys.stderr)
+    sys.exit(1)
+
 detector = dd4hep.Detector.getInstance()
 detector.fromXML(detectorFile)
 
