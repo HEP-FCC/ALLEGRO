@@ -10,8 +10,6 @@ fi
 if [ -z "${ALLEGRO+x}" ]; then
     ALLEGRO=../
 fi
-echo $ALLEGRO
-
 
 
 # test creating root file with capacitance values

@@ -31,20 +31,20 @@ add_test(NAME HelloWorldAlg
                COMMAND k4run k4ProjectTemplate/options/createHelloWorld.py)
 
 add_test(NAME ctest_turbineECalEndcap_calib
-               WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-               COMMAND test/ctest_turbineECalEndcap_calib.sh)
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_turbineECalEndcap_calib.sh)
 	       
 add_test(NAME ctest_turbineECalEndcap_noise
                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
                COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_turbineECalEndcap_noise.sh)
 
 add_test(NAME ctest_neighbours
-               WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-               COMMAND test/ctest_neighbours.sh)
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_neighbours.sh)
 
 add_test(NAME ctest_xtalk
-               WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-               COMMAND test/ctest_xtalk.sh)
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_xtalk.sh)
 
 # For LD_LIBRARY_PATH
 # ${PROJECT_BINARY_DIR}                                         # The files <plugins>.components and <plugins>.confdb are here
