@@ -5,7 +5,7 @@ import os
 from Configurables import GeoSvc
 geoservice = GeoSvc("GeoSvc")
 # if FCC_DETECTORS is empty, this should use relative path to working directory
-path_to_detector = os.environ.get("FCCDETECTORS", "")
+path_to_detector = os.environ.get("K4GEO", "")
 print(path_to_detector)
 detectors_to_use=[
                     './FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml',
