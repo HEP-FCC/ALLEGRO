@@ -16,6 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ]]
+
 add_test(NAME CreateExampleEventData
                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                COMMAND k4run k4ProjectTemplate/options/createExampleEventData.py)
@@ -34,8 +35,8 @@ add_test(NAME ctest_turbineECalEndcap_calib
                COMMAND test/ctest_turbineECalEndcap_calib.sh)
 	       
 add_test(NAME ctest_turbineECalEndcap_noise
-	       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-               COMMAND test/ctest_turbineECalEndcap_noise.sh)
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_turbineECalEndcap_noise.sh)
 
 add_test(NAME ctest_neighbours
                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -63,19 +64,10 @@ add_test(NAME ctest_xtalk
 
 get_filename_component(CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
-set(test_environment "\
-LD_LIBRARY_PATH=\
-${PROJECT_BINARY_DIR}:\
-${PROJECT_BINARY_DIR}/${PROJECT_NAME}:\
-${CMAKE_CURRENT_BINARY_DIR}:\
-${CMAKE_CURRENT_BINARY_DIR}/genConfDir/${CURRENT_DIR_NAME}:\
-$ENV{LD_LIBRARY_PATH};\
-\
-PYTHONPATH=\
-${PROJECT_BINARY_DIR}/${PROJECT_NAME}/genConfDir:\
-${CMAKE_CURRENT_BINARY_DIR}/genConfDir:\
-$ENV{PYTHONPATH};\
-"
+set(test_environment
+  "LD_LIBRARY_PATH=${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/${PROJECT_NAME}:${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}/genConfDir/${CURRENT_DIR_NAME}:$ENV{LD_LIBRARY_PATH}"
+  "PYTHONPATH=${PROJECT_BINARY_DIR}/${PROJECT_NAME}/genConfDir:${CMAKE_CURRENT_BINARY_DIR}/genConfDir:$ENV{PYTHONPATH}"
+  "ALLEGRO=${CMAKE_SOURCE_DIR}"
 )
 get_property(test_names DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 set_tests_properties(${test_names} PROPERTIES ENVIRONMENT "${test_environment}")
