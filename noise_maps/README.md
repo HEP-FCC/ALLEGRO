@@ -40,7 +40,7 @@ Currently this is done by executing
 
 The "simple" in the filename reflects the fact that this is a very basic implementation and considers only the distance from the readout cell to the back of the detector, not the distance of the actual path a trace might take when the readout board lyout is done.
 
-Output ofthe above is endcap_capacitances.root.
+The output is `endcap_capacitances.root`.
 
 ### Step 3
 
@@ -51,7 +51,9 @@ Convert the capacitances to noise histograms.
 This first converts from capacitance to noise in electrons, assuming cold
 electronics, with that conversion taken from Omega lab measurements as reported in https://indico.cern.ch/event/1545838/contributions/6831866/attachments/3194785/5686292/capa_and_noise_juska_v0.pdf.
 
-Next the number of electrons is converted to MeV, based on the assumption that 23.6 eV is needed on average to create an electron/ion pair, and tha the recombination rate is 4%.  The output is noise_capa_ecalendcap/elecNoise_ecalendcap.root.
+Next the number of electrons is converted to MeV, based on the assumption that 23.6 eV is needed on average to create an electron/ion pair, and tha the recombination rate is 4%.
+
+The output is `noise_capa_ecalendcap/elecNoise_ecalendcap.root`.
 
 
 ### Step 4
@@ -60,4 +62,4 @@ Create the noise map file that can be used in reconstruction.
 
 ```k4run noise_map_endcapturbine.py FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml```
  
-
+The output is `cellNoise_map_endcapTurbine_electronicsNoiseLevel.root`.
