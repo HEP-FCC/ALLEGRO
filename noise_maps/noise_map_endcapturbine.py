@@ -4,7 +4,7 @@ import os
 # Detector geometry
 from Configurables import GeoSvc
 geoservice = GeoSvc("GeoSvc")
-# if FCC_DETECTORS is empty, this should use relative path to working directory
+# if K4GEO is empty, this should use relative path to working directory
 path_to_detector = os.environ.get("K4GEO", "")
 print(path_to_detector)
 detectors_to_use=[
