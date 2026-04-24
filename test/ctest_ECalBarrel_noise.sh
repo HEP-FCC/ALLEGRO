@@ -57,28 +57,29 @@ fi
 rm $refFile
 
 # test creating final noise map
-# echo
-# echo "#############################"
-# echo "# Creating final noise map  #"
-# echo "#############################"
-# echo
-# k4run $ALLEGRO/noise_maps/noise_map.py || exit 1
-# outFile=cellNoise_map_electronicsNoiseLevel_ecalB_thetamodulemerged.root
-# if [ ! -f $outFile ]; then
-#     echo "Output file missing"
-#     exit -1
-# fi
+echo
+echo "#############################"
+echo "# Creating final noise map  #"
+echo "#############################"
+echo
+k4run $ALLEGRO/noise_maps/noise_map.py --subdetectors ecalb --detector FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml || exit 1
+outFile=cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged.root
+if [ ! -f $outFile ]; then
+    echo "Output file missing"
+    exit -1
+fi
 
-# # compare created noise map to default one used in reconstruction
-# echo
-# echo "#############################"
-# echo "Comparing new map to reference one. If the test fails, you might need to update the reference"
-# echo "#############################"
-# echo
+# compare created noise map to default one used in reconstruction
+echo
+echo "#############################"
+echo "Comparing new map to reference one. If the test fails, you might need to update the reference"
+echo "#############################"
+echo
+# GM: disabled until we figure out with JP if the reference should be updated (there is a factor ~2 difference)
 # mkdir -p tmp
 # mv $outFile tmp
 # refFile=$outFile
-# outFile=tmp/$refFile
+# outFile=tmp/$outFile
 # if [ ! -f $refFile ]; then
 #     wget https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
 # fi

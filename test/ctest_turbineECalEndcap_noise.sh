@@ -61,8 +61,8 @@ echo "#############################"
 echo "# Creating final noise map  #"
 echo "#############################"
 echo
-k4run $ALLEGRO/noise_maps/noise_map_endcapturbine.py --compactFile FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml || exit 1
-outFile=cellNoise_map_endcapTurbine_electronicsNoiseLevel.root
+k4run $ALLEGRO/noise_maps/noise_map.py --subdetectors ecale --detector FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml || exit 1
+outFile=cellNoise_map_electronicsNoiseLevel_ecalE_ECalEndcapTurbine.root
 if [ ! -f $outFile ]; then
     echo "Output file missing"
     exit -1
@@ -76,8 +76,8 @@ echo "#############################"
 echo
 mkdir -p tmp
 mv $outFile tmp
-refFile=$outFile
-outFile=tmp/$refFile
+refFile=cellNoise_map_endcapTurbine_electronicsNoiseLevel.root
+outFile=tmp/$outFile
 if [ ! -f $refFile ]; then
     wget https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
 fi
