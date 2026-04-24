@@ -52,7 +52,7 @@ if [ ! -f $refFile ]; then
     echo "Failed to download reference file"
     exit -1
 fi
-python $ALLEGRO/utils/compare_endcap_noisehists.py $refFile $outFile || exit 1
+python $ALLEGRO/utils/compare_ecalendcap_noisehists.py $refFile $outFile || exit 1
 rm $refFile
 
 # test creating final noise map
