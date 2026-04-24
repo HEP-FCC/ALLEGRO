@@ -6,22 +6,24 @@ if len(sys.argv) != 3:
     sys.exit(1)
 f1 = ROOT.TFile.Open(sys.argv[1])
 f2 = ROOT.TFile.Open(sys.argv[2])
+n_layers = 11
 hist_names = [
-    "noise_endcap_wheel0",
-    "noise_endcap_wheel1",
-    "noise_endcap_wheel2"
+    f"h_elecNoise_fcc_{d}" for d in range (1, n_layers)
 ]
+
 tolerance = 1e-9  # adjust if needed
-ok = 0
+returnCode = 0
 for name in hist_names:
     h1 = f1.Get(name)
     h2 = f2.Get(name)
     if not h1 or not h2:
         print(f"[ERROR] Missing histogram: {name}")
+        returnCode = 1
         continue
     if (h1.GetNbinsX() != h2.GetNbinsX() or
         h1.GetNbinsY() != h2.GetNbinsY()):
         print(f"[ERROR] Different binning in {name}")
+        returnCode = 1
         continue
     max_diff = 0.0
     n_diff = 0
@@ -40,7 +42,7 @@ for name in hist_names:
         print(f"[OK] {name}: identical within tolerance")
     else:
         print(f"[DIFF] {name}: {n_diff} bins differ, max diff = {max_diff}")
-        ok = 1
+        returnCode = 1
 f1.Close()
 f2.Close()
-sys.exit(ok)
+sys.exit(returnCode)

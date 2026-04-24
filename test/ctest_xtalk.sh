@@ -11,7 +11,7 @@ if [ -z "${ALLEGRO+x}" ]; then
     ALLEGRO=../
 fi
 
-# create the neighbour map
+# create the crosstalk map
 echo
 echo "##############################"
 echo "# Creating the crosstalk map #"

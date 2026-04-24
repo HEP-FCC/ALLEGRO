@@ -22,6 +22,14 @@ run capacitance-to-noise conversion script for getting noise maps
 
 Now you should have the new noise maps and supporting plots in a newly created directory
 
+# Step 4
+
+create the noise map
+
+```k4run noise_map.py --detector FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml --subdetectors ecale```
+
+The output is `cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged.root`.
+
 
 ## Endcap
 
@@ -60,6 +68,6 @@ The output is `noise_capa_ecalendcap/elecNoise_ecalendcap.root`.
 
 Create the noise map file that can be used in reconstruction.
 
-```k4run noise_map_endcapturbine.py --compactFile FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml```
- 
-The output is `cellNoise_map_endcapTurbine_electronicsNoiseLevel.root`.
+```k4run noise_map.py --detector FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml --subdetectors ecale```
+
+The output is `cellNoise_map_electronicsNoiseLevel_ecalE_ECalEndcapTurbine.root`.

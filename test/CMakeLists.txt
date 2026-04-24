@@ -30,6 +30,10 @@ add_test(NAME HelloWorldAlg
                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                COMMAND k4run k4ProjectTemplate/options/createHelloWorld.py)
 
+add_test(NAME ctest_ECalBarrel_noise
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_ECalBarrel_noise.sh)
+
 add_test(NAME ctest_turbineECalEndcap_calib
                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
                COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_turbineECalEndcap_calib.sh)
