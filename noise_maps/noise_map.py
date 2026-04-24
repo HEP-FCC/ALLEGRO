@@ -177,10 +177,6 @@ if "hcalEndcap" in detectors:
         []
     ]
     outputFileName = outputFileName + "_hcalE_" + hcalEndcapReadoutName
-    # HCalNoiseTool = ConstNoiseTool("ConstNoiseTool",
-    #                                detectors = ["ECAL_Barrel", "ECAL_Endcap", "HCAL_Barrel", "HCAL_Endcap"],
-    #                                detectorsNoiseRMS = [0.0075/4, 0.0075/4, 0.0115/4, 0.0115/4],
-    #                                OutputLevel = DEBUG)
 else:
     HCalEndcapNoiseTool = None
 
