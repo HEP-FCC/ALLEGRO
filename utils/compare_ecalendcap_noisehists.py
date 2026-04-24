@@ -12,16 +12,18 @@ hist_names = [
     "noise_endcap_wheel2"
 ]
 tolerance = 1e-9  # adjust if needed
-ok = 0
+returnCode = 0
 for name in hist_names:
     h1 = f1.Get(name)
     h2 = f2.Get(name)
     if not h1 or not h2:
         print(f"[ERROR] Missing histogram: {name}")
+        returnCode = 1
         continue
     if (h1.GetNbinsX() != h2.GetNbinsX() or
         h1.GetNbinsY() != h2.GetNbinsY()):
         print(f"[ERROR] Different binning in {name}")
+        returnCode = 1
         continue
     max_diff = 0.0
     n_diff = 0
@@ -40,7 +42,7 @@ for name in hist_names:
         print(f"[OK] {name}: identical within tolerance")
     else:
         print(f"[DIFF] {name}: {n_diff} bins differ, max diff = {max_diff}")
-        ok = 1
+        returnCode = 1
 f1.Close()
 f2.Close()
-sys.exit(ok)
+sys.exit(returnCode)
