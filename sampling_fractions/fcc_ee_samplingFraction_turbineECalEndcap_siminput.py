@@ -9,17 +9,14 @@ momentum = 40
 thetaMin = 0.
 thetaMax = 50.
 
-# Data service
-#from Configurables import FCCDataSvc
-#podioevent  = FCCDataSvc("EventDataSvc")
+from Configurables import EventDataSvc
+from k4FWCore import ApplicationMgr, IOSvc
 
-from Configurables import k4DataSvc, PodioInput
-evtsvc = k4DataSvc('EventDataSvc')
-evtsvc.input = "root/allegro_v03_evts_10000_*sim.root"
-podioevent  = k4DataSvc("EventDataSvc")
+podioevent = EventDataSvc("EventDataSvc")
 
-inp = PodioInput('InputReader')
-inp.collections = [
+iosvc = IOSvc()
+iosvc.Input = "root/allegro_v03_evts_10000_*sim.root"
+iosvc.CollectionNames = [
   'EventHeader',
   'MCParticles',
   'ECalEndcapTurbine',
@@ -66,19 +63,12 @@ audsvc.Auditors = [chra]
 #geantsim.AuditExecute = True
 hist.AuditExecute = True
 
-from Configurables import PodioOutput
-### PODIO algorithm
-out = PodioOutput("out",OutputLevel=INFO)
-out.outputCommands = ["drop *"]
-out.filename = "fccee_samplingFraction_inclinedEcal.root"
-
 #from Configurables import EventCounter
 #event_counter = EventCounter('event_counter')
 #event_counter.Frequency = 10
 
 # ApplicationMgr
-from Configurables import ApplicationMgr
-ApplicationMgr( TopAlg = [inp, hist, out],
+ApplicationMgr( TopAlg = [hist],
                 EvtSel = 'NONE',
                 EvtMax = -1,
                 # order is important, as GeoSvc is needed by G4SimSvc
