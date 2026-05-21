@@ -16,7 +16,7 @@ with the following lines edited to match your configuration:
 \# Electron momentum in GeV  
 momentum = 40
 
-evtsvc.input = "root/allegro_v03_evts_10000_*sim.root"
+iosvc.Input = "root/allegro_v03_evts_10000_*sim.root"
 
 This will produce a file histSF_fccee_turbineECalEndcap.root.
 
