@@ -107,7 +107,8 @@ if not os.path.exists(capa_filename):
     sys.exit(1)
 fIn = TFile(capa_filename, "r")
 
-output_folder = "noise_capa_" + date.today().strftime("%y%m%d") 
+output_folder = "noise_capa_ecalbarrel"
+# output_folder = "noise_capa_ecalbarrel" + date.today().strftime("%y%m%d")
 if not os.path.isdir(output_folder):
     os.mkdir(output_folder)
 fSaveAll = TFile(os.path.join(output_folder, "capacitances_ecalBarrelFCCee_theta.root"),"RECREATE")

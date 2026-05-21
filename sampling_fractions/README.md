@@ -26,9 +26,12 @@ With the following lines edited to match your configuration:
 \# Electron momentum in GeV  
 momentum = 40
 
-evtsvc.input = "/root/ALLEGRO_calibration_sim_40GeV_10000ev_electrons.root"
+iosvc.Input = "root/allegro_v03_evts_10000_*sim.root"
 ```
-This will produce a file `histSF_fccee_turbineECalEndcap.root`.
+
+This will produce a file histSF_fccee_turbineECalEndcap.root.
+
+The last step is to fit the histograms from that root file to extract the sampling fractions:
 
 The last step is to fit the histograms from that root file to extract the sampling fractions. To do so, we need in particular the module `calo_init`, which is in `k4RecCalorimeter/RecFCCeeCalorimeter/scripts/`:
 ```

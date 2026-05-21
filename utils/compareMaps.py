@@ -81,6 +81,7 @@ else:
 if nevts>0:
     total_entries = min(total_entries, nevts)
 
+use_tqdm = sys.stderr.isatty()
 if not ignoreCounts:       # standard search: same number of entries, assume sorted in same way
     # initialise counters
     badEntries = []
@@ -93,7 +94,7 @@ if not ignoreCounts:       # standard search: same number of entries, assume sor
         diffs[branch] = 0
 
     # loop over events
-    for i in tqdm(range(total_entries),mininterval=0.2):
+    for i in tqdm(range(total_entries), mininterval=0.2, disable=not use_tqdm):
         tree1.GetEntry(i)
         tree2.GetEntry(i)
         diff = False
@@ -169,7 +170,7 @@ else:    # compare entries by looking for same cellId in two trees
     diffs = {b: 0 for b in branchList}
 
     # check entries in second tree but not in first one
-    for j in tqdm(range(tree2.GetEntries()), mininterval=0.2):
+    for j in tqdm(range(tree2.GetEntries()), mininterval=0.2, disable=not use_tqdm):
         tree2.GetEntry(j)
         key2 = getattr(tree2, "cellId")
         if key2 not in index1:
@@ -178,7 +179,7 @@ else:    # compare entries by looking for same cellId in two trees
             continue
         
     # check entries in first tree but not in second one
-    for i in tqdm(range(tree1.GetEntries()), mininterval=0.2):
+    for i in tqdm(range(tree1.GetEntries()), mininterval=0.2, disable=not use_tqdm):
         tree1.GetEntry(i)
         key1 = getattr(tree1, "cellId")
         if key1 not in index2:
@@ -199,7 +200,7 @@ else:    # compare entries by looking for same cellId in two trees
 
     # now compare common entries (cellID in both files) - slow, so might want to run over only a fraction of events
     # iterate first tree, match by key
-    for i in tqdm(range(total_entries), mininterval=0.2):
+    for i in tqdm(range(total_entries), mininterval=0.2, disable=not use_tqdm):
         tree1.GetEntry(i)
         key1 = getattr(tree1, "cellId")
         if key1 not in index2:
