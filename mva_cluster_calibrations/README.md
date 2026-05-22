@@ -10,6 +10,11 @@ It uses LightGBM to optimise the BDT weights.
 The output model is saved to ONNX.
 The input features and output target can be read from ROOT files produced with the ALLEGRO simulation, or from CSV or pickle files produced by a previous run of the script.
 
+[!WARNING]
+Models trained with `useExtraFeatures=True` use additional input variables compared to the default configuration. At the moment, these models may not be directly usable in reconstruction with the default `CalibrateCaloClusters` input-shape check, which expects `m_numLayersTotal + 1` input features.
+If the exported ONNX model contains the extra features, the corresponding reconstruction-side configuration/code must be updated consistently, e.g. to expect `m_numLayersTotal + 3` input features for this case.
+
+Models trained with `useExtraFeatures=False` keep the default input layout and can be used with the current default reconstruction setup.
 
 ## Installation
 
