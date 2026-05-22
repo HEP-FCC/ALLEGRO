@@ -27,9 +27,9 @@ from Configurables import GeoSvc
 geoservice = GeoSvc("GeoSvc",
                     OutputLevel = INFO)
 
-path_to_detector = os.environ.get("FCCDETECTORS", "")
+path_to_detector = os.environ.get("K4GEO", "")
 detectors_to_use=[ 
-    './FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03_calibration.xml',
+    'FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml',
     #'Detector/DetFCCeeIDEA-LAr/compact/FCCee_DectEmptyMaster.xml',
     #'Detector/DetFCCeeIDEA-LAr/compact/FCCee_DectMaster.xml',
     #'Detector/DetFCCeeECalInclined/compact/original_FCCee_ECalBarrel_calibration.xml',
