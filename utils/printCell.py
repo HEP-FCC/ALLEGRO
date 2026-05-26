@@ -250,7 +250,8 @@ if args.noise:
 # ================================
 if args.cells:
     cell_list = [int(x) for x in args.cells.split(",")]
-    print_cells(cell_list)
+    for cell in cell_list:
+        print_cell(cell)
 elif args.random:
     print_random(args.random)
 else:
