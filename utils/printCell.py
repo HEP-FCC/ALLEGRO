@@ -132,19 +132,16 @@ def decode(cellID):
 # =============================================
 def print_cell(cellID):
     print("cellID:", int(cellID))
-
     fields = decode(cellID)
-
     for k, v in fields.items():
         print(f"{k}: {v}")
-
     print()
 
 
 # =======================================
 # Print cell with position iEntry in tree
 # =======================================
-def print_entry(iEntry, showNeighbours=True, showNoise=False):
+def print_entry(iEntry, showNeighbours, showNoise):
     TNeighbours.GetEntry(iEntry)
 
     # print("="*50)
@@ -180,7 +177,7 @@ def print_neighbours_of_cell(cellID):
         TNeighbours.GetEntry(i)
         cID = TNeighbours.cellId
         if cID == cellID:
-            print_entry(i, True, False)
+            print_cell(i, False, False)
             return
 
     print("CellID not found")
@@ -189,13 +186,13 @@ def print_neighbours_of_cell(cellID):
 # =========================================
 # Print info about n random cells
 # =========================================
-def print_random(n=10):
+def print_random(n=10, showNeighbours=False, showNoise=False):
     import random
     nEntries = TNeighbours.GetEntries()
 
     for _ in range(n):
         i = random.randint(0, nEntries-1)
-        print_entry(i, True, False)
+        print_entry(i, showNeighbours, showNoise)
 
 
     
@@ -204,6 +201,8 @@ def print_random(n=10):
 # ================================
 
 parser = argparse.ArgumentParser(description="Print cell info")
+parser.add_argument("--neighbours", action="store_true",
+                    help="Print neighbours info")
 parser.add_argument("--neighbours-file", default=defaultFilenameNeighbours)
 parser.add_argument("--noise", action="store_true",
                     help="Print noise info")
@@ -211,6 +210,7 @@ parser.add_argument("--noise-file", default=defaultFilenameNoise)
 parser.add_argument("--read-xml", action="store_true",
                     help="Read encoding from compact file")
 parser.add_argument("--xml-file", default=defaultCompactFile)
+
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--cells",
                    help="Comma-separated list of cellIDs")
@@ -220,7 +220,8 @@ args = parser.parse_args()
 filenameNeighbours = args.neighbours_file
 filenameNoise = args.noise_file
 compactFile = args.xml_file
-
+showNoise = args.noise
+showNeighbours = args.neighbours
 
 # ================================
 # Load encoders
@@ -250,9 +251,27 @@ if args.noise:
 # ================================
 if args.cells:
     cell_list = [int(x) for x in args.cells.split(",")]
-    for cell in cell_list:
-        print_cell(cell)
+
+    # Use sets for fast lookup and tracking
+    cells_to_find = set(cell_list)
+    found_cells = set()
+
+    for iEntry in range(TNeighbours.GetEntries()):
+        TNeighbours.GetEntry(iEntry)
+        cell_id = TNeighbours.cellId
+        if cell_id in cells_to_find:
+            print_entry(iEntry, showNeighbours, showNoise)
+            found_cells.add(cell_id)
+            # Stop early if all cells have been found
+            if found_cells == cells_to_find:
+                break
+    # Print cells that were not found
+    missing_cells = cells_to_find - found_cells
+    if missing_cells:
+        print("\nCells not found:")
+        for cell in sorted(missing_cells):
+            print(f"  {cell}")
 elif args.random:
-    print_random(args.random)
+    print_random(args.random, showNeighbours, showNoise)
 else:
     print("ERROR: specify --cells or --random")
