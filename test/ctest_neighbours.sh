@@ -32,6 +32,8 @@ fi
 echo
 echo "#############################"
 echo "Comparing new map to reference one. If the test fails, you might need to update the reference"
+echo "Note (27/5/2026): due to rounding some (4) edge cells in the ECAL barrel may have slightly different"
+echo "neighbours in the ECAL endcap when running the test locally rather than in github CI"
 echo "#############################"
 echo
 refFile="neighbours_map_ecalB_thetamodulemerged_ecalE_turbine_hcalB_hcalEndcap_phitheta.root"
