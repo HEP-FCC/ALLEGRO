@@ -21,29 +21,32 @@
 debug = False                                            # print debugging statements / make more plots
 nLayers = 11                                             # number of longitudinal layers in calo
 useParamsFromFits = True                                 # compute mu, sigma from stddev in data or from gaussian fit
-readDataFromJson = True                                  # if true, will read the energies, responses and resolutions from json
+readDataFromJson = False                                 # if true, will read the energies, responses and resolutions from json
                                                          # a json file rather than recomputing them from the ROOT files
                                                          # that requires running the inference
-doNoise = True                                           # include noise term b/E in fit to resolution vs E
-#doNoise = False                                         # include noise term b/E in fit to resolution vs E
+#doNoise = True                                          # include noise term b/E in fit to resolution vs E
+doNoise = False                                          # include noise term b/E in fit to resolution vs E
 clusterCollections = [                                   # collections for which we test the performance
     'EMBCaloClusters',
     'EMBCaloTopoClusters',
-    'EMBCaloClustersWithNoise',
-    'EMBCaloTopoClustersWithNoise'
+#    'EMBCaloClustersWithNoise',
+#    'EMBCaloTopoClustersWithNoise'
 ]
 # label = "EMB_topo_withnoise"
-label = "EMB_calo_topo_w_wo_noise"
+# label = "EMB_calo_topo_w_wo_noise"
+label = "EMB_calo_topo_wo_noise"
 calibrationFiles = [
     'EMBCaloClusters',
     'EMBCaloTopoClusters',
-    'EMBCaloClustersWithNoise',
-    'EMBCaloTopoClustersWithNoise'
+#    'EMBCaloClustersWithNoise',
+#    'EMBCaloTopoClustersWithNoise'
 ]
-#basedir = "../fullsim/run/test/clusters/"               # directory where the input files are
-#basedir = "../fullsim/run/test/clusters_with_noise/"     # directory where the input files are
-#basedir = "../fullsim/run/test/clusters_nothreshold_topo/"     # directory where the input files are
-basedir = "../fullsim/run/test/clusters_smallSWcluster/"     # directory where the input files are
+# basedir = "../fullsim/run/test/clusters/"               # directory where the input files are
+# basedir = "../fullsim/run/test/clusters_with_noise/"     # directory where the input files are
+# basedir = "../fullsim/run/test/clusters_nothreshold_topo/"     # directory where the input files are
+# basedir = "../fullsim/run/test/clusters_smallSWcluster/"     # directory where the input files are
+basedir = "../../run/paper_LArPb/clusters/"
+# basedir = "../../run/paper_LKrW/clusters/"
 particle = 'gamma'                                       # particle type
 # particle = 'e-'                                        # particle type
 useShapeParameters = True                                # read energy fraction per layer from shapeParameters or calculate it from cluster cell collection

@@ -17,7 +17,9 @@ readInputsFromCsv = False                                      # read input feat
 readInputsFromPkl = False                                      # read input features from root or from saved dataframe
 saveDataToCsv = False                                          # save data to CSV
 saveDataToPkl = True                                           # save data to pickle
-csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"  # directory where we save/load data in csv/pkl format
+# csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"  # directory where we save/load data in csv/pkl format
+# csvpklDir = "../../run/paper_LArPb/training_reconstruction"
+csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
 doTraining = True                                              # if false, only plot Ereco/Etrue
 saveModelToONNX = True                                         # export model (also) to onnx portable format
 particle_PDG = 22                                              # PDGid of particle (not used - assumes particle with highest p is the good one)
@@ -28,8 +30,8 @@ treeName = 'events'                                            # name of TTree i
 clusterCollections = [                                         # collections for which we train the regression
     'EMBCaloClusters',
     'EMBCaloTopoClusters',
-    'EMBCaloClustersWithNoise',
-    'EMBCaloTopoClustersWithNoise'
+#    'EMBCaloClustersWithNoise',
+#    'EMBCaloTopoClustersWithNoise'
 ]
 # dictionary of input files: path, filename, and whether to use merged file or not
 # in general I used to run directly over the merged file, but with very big productions
@@ -44,9 +46,13 @@ inputFiles = {
     #},
     "midE": {
         # 1-100 GeV
-        "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
-        "filename": "production_reconstruction_particle_gamma_jobid*.root",
-        "usechain": True,
+        # "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
+        #"filename": "production_reconstruction_particle_gamma_jobid*.root",
+        #"usechain": True,
+        #"basedir": "../../run/paper_LArPb/training_reconstruction/",
+        "basedir": "../../run/paper_LKrW/training_reconstruction_small/",
+        "filename": "production_reconstruction_particle_gamma.root",
+        "usechain": False
     },
     #"highE": {
     #    # 100-105 GeV
