@@ -47,6 +47,7 @@ calibrationFiles = [
 # basedir = "../fullsim/run/test/clusters_smallSWcluster/"     # directory where the input files are
 basedir = "../../run/paper_LArPb/clusters/"
 # basedir = "../../run/paper_LKrW/clusters/"
+
 particle = 'gamma'                                       # particle type
 # particle = 'e-'                                        # particle type
 useShapeParameters = True                                # read energy fraction per layer from shapeParameters or calculate it from cluster cell collection
@@ -61,11 +62,13 @@ energies = [                                             # energy points (in MeV
     30000,
     50000,
     75000,
-    100000
+    100000,
+    135000,
+    180000
 ]
 useAK = False                                            # true for awkward, false for numpy
-modelFormat = 'onnx'                                    # use model stored in onnx or lgbm format
-#modelFormat = 'lgbm'                                     # use model stored in onnx or lgbm format
+modelFormat = 'onnx'                                     # use model stored in onnx or lgbm format
+#modelFormat = 'lgbm'                                    # use model stored in onnx or lgbm format
 useExtraFeatures = True                                  # use also cluster theta, theta % deltaTheta, phi % deltaPhi as extra input features
 
 #emin=0
