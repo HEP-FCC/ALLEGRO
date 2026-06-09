@@ -17,7 +17,11 @@ readInputsFromCsv = False                                      # read input feat
 readInputsFromPkl = False                                      # read input features from root or from saved dataframe
 saveDataToCsv = False                                          # save data to CSV
 saveDataToPkl = True                                           # save data to pickle
-csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"  # directory where we save/load data in csv/pkl format
+# csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"  # directory where we save/load data in csv/pkl format
+# csvpklDir = "../../run/paper_LArPb/training_reconstruction"
+csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
+# suffix = ""                                                  # suffix to append to model files
+suffix = "_LKrW"
 doTraining = True                                              # if false, only plot Ereco/Etrue
 saveModelToONNX = True                                         # export model (also) to onnx portable format
 particle_PDG = 22                                              # PDGid of particle (not used - assumes particle with highest p is the good one)
@@ -28,8 +32,8 @@ treeName = 'events'                                            # name of TTree i
 clusterCollections = [                                         # collections for which we train the regression
     'EMBCaloClusters',
     'EMBCaloTopoClusters',
-    'EMBCaloClustersWithNoise',
-    'EMBCaloTopoClustersWithNoise'
+#    'EMBCaloClustersWithNoise',
+#    'EMBCaloTopoClustersWithNoise'
 ]
 # dictionary of input files: path, filename, and whether to use merged file or not
 # in general I used to run directly over the merged file, but with very big productions
@@ -43,17 +47,25 @@ inputFiles = {
     #    "usechain": False,
     #},
     "midE": {
-        # 1-100 GeV
-        "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
-        "filename": "production_reconstruction_particle_gamma_jobid*.root",
-        "usechain": True,
+        # "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
+        #"filename": "production_reconstruction_particle_gamma_jobid*.root",
+        #"usechain": True,
+        # 0.1-105 GeV
+        # "basedir": "../../run/paper_LArPb/training_reconstruction/",
+        "basedir": "../../run/paper_LKrW/training_reconstruction_small/",
+        "filename": "production_reconstruction_particle_gamma.root",
+        "usechain": False
     },
-    #"highE": {
-    #    # 100-105 GeV
-    #    "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
-    #    "filename": "production_reconstruction_particle_gamma_highE.root",
-    #    "usechain": False,
-    #}
+    "highE": {
+        # "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
+        # "filename": "production_reconstruction_particle_gamma_highE.root",
+        # "usechain": False,
+        # 105-200 GeV
+        # "basedir": "../../run/paper_LArPb/training_reconstruction_small_highE/",
+        "basedir": "../../run/paper_LKrW/training_reconstruction_small_highE/",
+        "filename": "production_reconstruction_particle_gamma.root",
+        "usechain": False
+    }
 }
 
 # -------------------------------------------------------------------------------------------
@@ -697,7 +709,7 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
                           callbacks=[lgb.log_evaluation(10), lgb.record_evaluation(evals)])
 
         # save the model
-        outfile = f'lgbm_calibration-{clusters}-energy-{emin}-{emax}'
+        outfile = f'lgbm_calibration-{clusters}-energy-{emin}-{emax}{suffix}'
         print("\nSaving the model to file %s.txt ..." % outfile)
         model.save_model('models/' + outfile + '.txt')
         if saveModelToONNX:
@@ -713,7 +725,7 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
         for metric in params['metric']:
             fig, ax = plt.subplots()
             lgb.plot_metric(evals, metric=metric, ax=ax)
-            plt.savefig(f'plots/training-history-{clusters}-energy-{emin}-{emax}-{metric}.pdf')
+            plt.savefig(f'plots/training-history-{clusters}-energy-{emin}-{emax}-{metric}{suffix}.pdf')
             plt.close(fig)
 
         # prediction and accuracy check
