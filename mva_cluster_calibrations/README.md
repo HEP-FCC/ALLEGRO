@@ -47,4 +47,12 @@ To evaluate the BDT performance: adjust properly the parameters in the script te
 python test_calibration.py
 ```
 
+The plot comparing the energy resolution for LAr+Pb and LKr+W barrel ECAL for the ALLEGRO paper was done as follows:
+* extract sampling fractions for the two scenarios, using options `doCalibrationFiles` and `doSamplingFractions` in file [run_all_chain.sh](https://gitlab.cern.ch:8443/gmarchio/FCC-scripts/-/blob/main/run_all_chain.sh)
+* simulate and reconstruct events for training, using option `doClustersForMVATraining` in file [run_all_chain.sh](https://gitlab.cern.ch:8443/gmarchio/FCC-scripts/-/blob/main/run_all_chain.sh)
+* simulate and reconstruct events for testing, using option `doClustersForMVAEvaluation` in file [run_all_chain.sh](https://gitlab.cern.ch:8443/gmarchio/FCC-scripts/-/blob/main/run_all_chain.sh)
+* when running the simulation and reconstruction, make sure the proper detector models and sampling fractions are used in the reconstruction steering script [run_ALLEGRO_reco.py](https://gitlab.cern.ch:8443/gmarchio/FCC-scripts/-/blob/main/run_ALLEGRO_reco.py) and in the other scripts ([runParallel.py](https://gitlab.cern.ch:8443/gmarchio/FCC-scripts/-/blob/main/runParallel.py), [run_all_chain.sh](https://gitlab.cern.ch:8443/gmarchio/FCC-scripts/-/blob/main/run_all_chain.sh))
+* train and test the calibration with the scripts described above, adjusting the names and directories of the input files in the python script, as well as the suffix of the produced output files (models, json with results, plots)
+* overlay the two resolution curves in a single plot: `python plot_paper.py`
+
 ## Endcap

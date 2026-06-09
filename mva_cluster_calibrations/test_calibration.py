@@ -46,7 +46,9 @@ calibrationFiles = [
 # basedir = "../fullsim/run/test/clusters_nothreshold_topo/"     # directory where the input files are
 # basedir = "../fullsim/run/test/clusters_smallSWcluster/"     # directory where the input files are
 basedir = "../../run/paper_LArPb/clusters/"
-# basedir = "../../run/paper_LKrW/clusters/"
+suffix=""
+#basedir = "../../run/paper_LKrW/clusters/"
+#suffix="_LKrW"
 
 particle = 'gamma'                                       # particle type
 # particle = 'e-'                                        # particle type
@@ -298,7 +300,7 @@ def read_file(energy, particle, clusters, cells):
 
 # Load lightgbm model
 def readCalibration(clusters, emin=0, emax=1000):
-    model_file = f'models/lgbm_calibration-{clusters}-energy-{emin}-{emax}.txt'
+    model_file = f'models/lgbm_calibration-{clusters}-energy-{emin}-{emax}{suffix}.txt'
     print("Reading calibration parameters from file:", model_file)
     return lgb.Booster(model_file=model_file)
 
@@ -325,7 +327,7 @@ responses_cal = {}
 fitparams = {}
 
 if readDataFromJson:
-    jsonFileName = label+'.json'
+    jsonFileName = label+suffix+'.json'
     print("Reading energies, responses and resolutions from JSON file", jsonFileName)
     with open(jsonFileName, 'r') as jsonFile:
         dataFromJson = json.load(jsonFile)
@@ -381,7 +383,7 @@ if not readDataFromJson:
                 emin = calibrations[i]["emin_part"]
                 emax = calibrations[i]["emax_part"]
                 calibFile = calibrationFiles[index]
-                model_file = f'models/lgbm_calibration-{calibFile}-energy-{emin}-{emax}.onnx'
+                model_file = f'models/lgbm_calibration-{calibFile}-energy-{emin}-{emax}{suffix}.onnx'
                 print("Reading calibration parameters from file:", model_file)
                 session.append(onnxruntime.InferenceSession(model_file,
                                                             providers=["CPUExecutionProvider"]))
@@ -464,21 +466,21 @@ if not readDataFromJson:
                 plt.clf()
                 plt.hist(p_part,100,(E-0.99,E+1.01))
                 plt.xlabel('$E_{true}$ [GeV]')
-                plt.savefig('plots/e_true_energy_%d.pdf' % energy)
+                plt.savefig('plots/e_true_energy_%d%s.pdf' % (energy, suffix))
                 #plt.show()
         
                 # plot the generated particle spectra - theta
                 plt.clf()
                 plt.hist(theta_part*180/np.pi,50)
                 plt.xlabel('$\\theta_{true}$ $[{}^\\circ]$')
-                plt.savefig('plots/theta_true_energy_%d.pdf' % energy)
+                plt.savefig('plots/theta_true_energy_%d%s.pdf' % (energy, suffix))
                 #plt.show()
         
                 # plot the generated particle spectra - phi
                 plt.clf()
                 plt.hist(phi_part,50)
                 plt.xlabel('$\phi_{true}$')
-                plt.savefig('plots/phi_true_energy_%d.pdf' % energy)
+                plt.savefig('plots/phi_true_energy_%d%s.pdf' % (energy, suffix))
                 #plt.show()
     
             # Calculate and draw cluster distributions
@@ -562,19 +564,19 @@ if not readDataFromJson:
             plt.clf()
             plt.hist(e_cl,100,(E*0.8,E*1.2))
             plt.xlabel('$E_{cl}$ [GeV]')
-            plt.savefig('plots/e_reco_energy_%d_%s.pdf' % (energy, clusters))
+            plt.savefig('plots/e_reco_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
             #plt.show()
 
             plt.clf()
             plt.hist(theta_cl*180/np.pi,50)
             plt.xlabel('$\\theta_{cl}$ $[{}^\\circ]$')
-            plt.savefig('plots/theta_reco_energy_%d_%s.pdf' % (energy, clusters))
+            plt.savefig('plots/theta_reco_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
             #plt.show()
         
             plt.clf()
             plt.hist(phi_cl,50)
             plt.xlabel('$\phi_{cl}$')
-            plt.savefig('plots/phi_reco_energy_%d_%s.pdf' % (energy, clusters))
+            plt.savefig('plots/phi_reco_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
         
             #plt.close()
         
@@ -594,7 +596,7 @@ if not readDataFromJson:
                 ax.hist(ecl_vs_layer[:,layer], 50)
                 ax.set_xlabel('Energy in layer [GeV]')
                 # plt.legend()
-                # plt.savefig('plots/energy_in_layer%d_%s.pdf' % (layer, clusters))
+                # plt.savefig('plots/energy_in_layer%d_%s%s.pdf' % (layer, clusters, suffix))
                 # plt.show()
 
             # calculate and draw energy fraction per layer
@@ -614,7 +616,7 @@ if not readDataFromJson:
                     ax.hist(energyFraction_vs_layer[:,layer], 50)
                     ax.set_xlabel('Energy in layer / Cluster energy')
                     # plt.legend()
-                    # plt.savefig('plots/energy_in_layer%d_%s.pdf' % (layer, clusters))
+                    # plt.savefig('plots/energy_in_layer%d_%s%s.pdf' % (layer, clusters, suffix))
                     # plt.show()
     
             # calculate the residuals
@@ -638,7 +640,7 @@ if not readDataFromJson:
             ax.set_xlabel('$(E_{cl}^{raw}/E_{true}) - 1$')
             plt.legend()
             #plt.show()
-            plt.savefig('plots/e_resol_raw_energy_%d_%s.pdf' % (energy, clusters))
+            plt.savefig('plots/e_resol_raw_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
 
 
             # Do the regression
@@ -710,7 +712,7 @@ if not readDataFromJson:
             ax.text(0.7,0.60,'$\sigma$ = %.3f $\pm$ %.3f' % (_sigma, _sigmaerr), transform=ax.transAxes)
             ax.set_xlabel('$(E_{cl}^{raw}/E_{true}) - 1$')
             plt.legend()
-            plt.savefig('plots/e_resol_raw_energy_%d_%s.pdf' % (energy, clusters))
+            plt.savefig('plots/e_resol_raw_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
 
             if useParamsFromFits:
                 responses_raw[clusters][idx] = _mu*100
@@ -750,7 +752,7 @@ if not readDataFromJson:
 
             ax.set_xlabel('$(E_{cl}^{raw}/E_{true}) - 1$')
             plt.legend()
-            plt.savefig('plots/e_resol_calib_energy_%d_%s.pdf' % (energy, clusters))
+            plt.savefig('plots/e_resol_calib_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
 
             if useParamsFromFits:
                 responses_cal[clusters][idx] = _mu*100
@@ -792,7 +794,7 @@ if not readDataFromJson:
     #     col = i % num_cols
     #     axs[row,col].axis('off')
 
-    # f.savefig('plots/e_resol_calib_%s.pdf' % clusters, dpi=600)
+    # f.savefig('plots/e_resol_calib_%s%s.pdf' % clusters, dpi=600)
 
 
 # save data to json so that we can redo the final plots later (maybe changing style)
@@ -805,7 +807,7 @@ dataForJson["responses_cal"] = responses_cal
 dataForJson["resolutions_cal"] = resolutions_cal
 dataForJson["resolutions_cal_err"] = resolutions_cal_err
 if not readDataFromJson:
-    with open(label+'.json', 'w') as json_file:
+    with open(label+suffix+'.json', 'w') as json_file:
         json.dump(dataForJson, json_file, indent=4)
 
 # do the final plots of resolution and response vs energy for all
@@ -819,7 +821,7 @@ plt.legend(loc='best', fontsize=14)
 plt.grid()
 plt.xlabel('$E_{true}$ [GeV]', fontsize=16)
 plt.ylabel('Response bias [%]', fontsize=16)
-plt.savefig(f'plots/response_vs_energy_{label}.pdf')
+plt.savefig(f'plots/response_vs_energy_{label}{suffix}.pdf')
 
 plt.clf()
 sc = {}
@@ -830,7 +832,7 @@ plt.legend(loc='best', fontsize=14)
 plt.grid()
 plt.xlabel('$E_{true}$ [GeV]', fontsize=16)
 plt.ylabel('Resolution [%]', fontsize=16)
-plt.savefig(f'plots/resolution_vs_energy_{label}.pdf')
+plt.savefig(f'plots/resolution_vs_energy_{label}{suffix}.pdf')
 
 for clusters in clusterCollections:
     print('\nCluster collection = %s\n' % clusters)
@@ -874,12 +876,12 @@ for clusters in clusterCollections:
 plt.xlabel('$E_{true}$ [GeV]')
 plt.ylabel('Resolution [%]')
 plt.legend(loc='best')
-plt.savefig(f'plots/resolution_vs_energy_fit_cal_{label}.pdf')
+plt.savefig(f'plots/resolution_vs_energy_fit_cal_{label}{suffix}.pdf')
 #plt.show()
 
 plt.xscale('log')
 
-plt.savefig(f'plots/resolution_vs_logenergy_fit_cal_{label}.pdf')
+plt.savefig(f'plots/resolution_vs_logenergy_fit_cal_{label}{suffix}.pdf')
 plt.xscale('linear')
 
 # plot resolutions vs 1/sqrt(E)
@@ -926,7 +928,7 @@ for clusters in clusterCollections:
 plt.xlabel('$1/\sqrt{E_{true}}$ [GeV$^{-1/2}$]')
 plt.ylabel('Resolution [%]')
 plt.legend(loc='best')
-plt.savefig(f'plots/resolution_vs_invsqrtenergy_fit_cal_{label}.pdf')
+plt.savefig(f'plots/resolution_vs_invsqrtenergy_fit_cal_{label}{suffix}.pdf')
 #plt.show()
 
 # plot calibrated resolution and response on same plot
@@ -980,10 +982,10 @@ for clusters in clusterCollections:
     # ax1.legend(lines, labels, title='Calib%s' % clusters, loc='best', frameon=False)
     ax1.legend(lines, labels, title=title, loc='best', frameon=False, fontsize=14)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.savefig(f'plots/resolution_and_response_vs_energy_cal_{clusters}.pdf')
+    plt.savefig(f'plots/resolution_and_response_vs_energy_cal_{clusters}{suffix}.pdf')
 
 dataForJson["fitparams"] = {}
 for clusters in clusterCollections:
     dataForJson["fitparams"][clusters] = list(fitparams[clusters])
-with open(label+'_with_fitparams.json', 'w') as json_file:
+with open(label+suffix+'_with_fitparams.json', 'w') as json_file:
     json.dump(dataForJson, json_file, indent=4)

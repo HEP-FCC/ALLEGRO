@@ -128,8 +128,8 @@ def main():
     # plt.title(coll)
     plt.legend(handles=[eb1, fit1_line, eb2, fit2_line])
     plt.tight_layout()
-    plt.savefig(args.output)
-    print(f"Saved {args.output}")
+    plt.savefig("plots/"+args.output)
+    print(f"Saved plots/{args.output}")
 
 if __name__ == "__main__":
     main()
