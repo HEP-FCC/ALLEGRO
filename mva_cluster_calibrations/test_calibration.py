@@ -19,7 +19,6 @@
 # Program settings
 
 debug = False                                            # print debugging statements / make more plots
-nLayers = 11                                             # number of longitudinal layers in calo
 useParamsFromFits = True                                 # compute mu, sigma from stddev in data or from gaussian fit
 readDataFromJson = False                                 # if true, will read the energies, responses and resolutions from json
                                                          # a json file rather than recomputing them from the ROOT files
@@ -27,19 +26,22 @@ readDataFromJson = False                                 # if true, will read th
 #doNoise = True                                          # include noise term b/E in fit to resolution vs E
 doNoise = False                                          # include noise term b/E in fit to resolution vs E
 clusterCollections = [                                   # collections for which we test the performance
-    'EMBCaloClusters',
-    'EMBCaloTopoClusters',
-#    'EMBCaloClustersWithNoise',
-#    'EMBCaloTopoClustersWithNoise'
+    # 'EMBCaloClusters',
+    # 'EMBCaloTopoClusters',
+    # 'EMBCaloClustersWithNoise',
+    # 'EMBCaloTopoClustersWithNoise'
+    'EMECCaloClusters',
 ]
 # label = "EMB_topo_withnoise"
 # label = "EMB_calo_topo_w_wo_noise"
-label = "EMB_calo_topo_wo_noise"
+# label = "EMB_calo_topo_wo_noise"
+label = "EMEC_calo_wo_noise"
 calibrationFiles = [
-    'EMBCaloClusters',
-    'EMBCaloTopoClusters',
+#    'EMBCaloClusters',
+#    'EMBCaloTopoClusters',
 #    'EMBCaloClustersWithNoise',
 #    'EMBCaloTopoClustersWithNoise'
+    'EMECCaloClusters',
 ]
 # basedir = "../fullsim/run/test/clusters/"               # directory where the input files are
 # basedir = "../fullsim/run/test/clusters_with_noise/"     # directory where the input files are
@@ -47,8 +49,8 @@ calibrationFiles = [
 # basedir = "../fullsim/run/test/clusters_smallSWcluster/"     # directory where the input files are
 basedir = "../../run/paper_LArPb/clusters/"
 suffix=""
-#basedir = "../../run/paper_LKrW/clusters/"
-#suffix="_LKrW"
+# basedir = "../../run/paper_LKrW/clusters/"
+# suffix="_LKrW"
 
 particle = 'gamma'                                       # particle type
 # particle = 'e-'                                        # particle type
@@ -65,8 +67,8 @@ energies = [                                             # energy points (in MeV
     50000,
     75000,
     100000,
-    135000,
-    180000
+#     135000,
+#     180000
 ]
 useAK = False                                            # true for awkward, false for numpy
 modelFormat = 'onnx'                                     # use model stored in onnx or lgbm format
@@ -228,7 +230,13 @@ def read_file(energy, particle, clusters, cells):
     if not energy in inputFeaturePositions:
         inputFeaturePositions[energy] = {}
 
-    filename = "reconstruction_energy_%d_theta_90_particle_%s.root" % (energy, particle)
+    if clusters[0:3] == "EMB":
+        nLayers = 11
+        theta = 90
+    elif clusters[0:4] == "EMEC":
+        nLayers = 98
+        theta = 20
+    filename = f"reconstruction_energy_{energy}_theta_{theta}_particle_{particle}.root"
     fileWithPath = os.path.abspath(basedir) + "/" + filename
     treename = 'events'
     print('Reading file %s' % fileWithPath)
@@ -270,14 +278,18 @@ def read_file(energy, particle, clusters, cells):
             ]
         if not clusters in inputFeaturePositions[energy]:
             # initialise list of input feature positions, assuming it's the same for each file
+            if clusters[0:3] == "EMB":
+                detector = "EMB"
+            elif clusters[0:4] == "EMEC":
+                detector = "EMEC"
             shapeParameterNames = read_metadata(fileWithPath, f'Augmented{clusters}')
-            nLayersFromROOTFileShapeParams = sum(1 for s in shapeParameterNames if s.startswith("energy_fraction_EMB_layer_"))
+            nLayersFromROOTFileShapeParams = sum(1 for s in shapeParameterNames if s.startswith(f"energy_fraction_{detector}_layer_"))
             if nLayersFromROOTFileShapeParams != nLayers:
                 print(f"Number of layers in shape parameters ({nLayersFromROOTFileShapeParams}) does not match nLayers ({nLayers}), quitting..")
                 exit(0)
             inputFeaturePositions[energy][clusters] = [-1] * nLayers
             for iLayer in range(nLayers):
-                inputFeaturePositions[energy][clusters][iLayer] = shapeParameterNames.index(f"energy_fraction_EMB_layer_{iLayer}")
+                inputFeaturePositions[energy][clusters][iLayer] = shapeParameterNames.index(f"energy_fraction_{detector}_layer_{iLayer}")
             if -1 in inputFeaturePositions[energy][clusters]:
                 print("Some input feature could not be found, quitting..")
                 exit(0)
@@ -327,7 +339,7 @@ responses_cal = {}
 fitparams = {}
 
 if readDataFromJson:
-    jsonFileName = label+suffix+'.json'
+    jsonFileName = "data/"+label+suffix+".json"
     print("Reading energies, responses and resolutions from JSON file", jsonFileName)
     with open(jsonFileName, 'r') as jsonFile:
         dataFromJson = json.load(jsonFile)
@@ -358,6 +370,10 @@ if not readDataFromJson:
     for index, clusters in enumerate(clusterCollections):
 
         print('\nCluster collection = %s' % clusters)
+        if clusters[0:3] == "EMB":
+            nLayers = 11
+        elif clusters[0:4] == "EMEC":
+            nLayers = 98
 
         # initialise arrays that will contain the resolution and response
         resolutions_raw[clusters] = [0]*len(energies)
@@ -435,13 +451,15 @@ if not readDataFromJson:
                     return c_calc_cluster_energy_per_layer(e_cells[entry].to_numpy(),
                                                            id_cells[entry].to_numpy(),
                                                            firstcell_clusters[entry][icl],
-                                                           lastcell_clusters[entry][icl], nLayers)
+                                                           lastcell_clusters[entry][icl],
+                                                           nLayers)
         
                 def calc_energy_per_layer(entry, icl):
                     return c_calc_cluster_energy_per_layer(e_cells[entry],
                                                            id_cells[entry],
                                                            firstcell_clusters[entry][icl],
-                                                           lastcell_clusters[entry][icl], nLayers)
+                                                           lastcell_clusters[entry][icl],
+                                                           nLayers)
         
 
             # Calculate and draw momentum and direction of primary particle
@@ -807,7 +825,7 @@ dataForJson["responses_cal"] = responses_cal
 dataForJson["resolutions_cal"] = resolutions_cal
 dataForJson["resolutions_cal_err"] = resolutions_cal_err
 if not readDataFromJson:
-    with open(label+suffix+'.json', 'w') as json_file:
+    with open("data/"+label+suffix+".json", 'w') as json_file:
         json.dump(dataForJson, json_file, indent=4)
 
 # do the final plots of resolution and response vs energy for all
@@ -971,9 +989,9 @@ for clusters in clusterCollections:
     labels = [line.get_label() for line in lines]
     # ax1.legend(lines, labels, title='Calib%s' % clusters, loc='best', frameon=False)
     title = ""
-    if clusters.startswith("EMBCaloClusters"):
+    if clusters.startswith("EMBCaloClusters") or clusters.startswith("EMECCaloClusters"):
         title = "EM SW clusters"
-    elif clusters.startswith("EMBCaloTopoClusters"):
+    elif clusters.startswith("EMBCaloTopoClusters") or clusters.startswith("EMECCaloTopoClusters"):
         title = "EM topo clusters"
     if clusters.endswith("WithNoise"):
         title += ", noise on"
@@ -987,5 +1005,5 @@ for clusters in clusterCollections:
 dataForJson["fitparams"] = {}
 for clusters in clusterCollections:
     dataForJson["fitparams"][clusters] = list(fitparams[clusters])
-with open(label+suffix+'_with_fitparams.json', 'w') as json_file:
+with open("data/"+label+suffix+"_with_fitparams.json", 'w') as json_file:
     json.dump(dataForJson, json_file, indent=4)
