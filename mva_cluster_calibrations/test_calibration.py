@@ -30,18 +30,20 @@ clusterCollections = [                                   # collections for which
     # 'EMBCaloTopoClusters',
     # 'EMBCaloClustersWithNoise',
     # 'EMBCaloTopoClustersWithNoise'
-    'EMECCaloClusters',
+    # 'EMECCaloClusters',
+    # 'EMECCaloTopoClusters',
 ]
 # label = "EMB_topo_withnoise"
 # label = "EMB_calo_topo_w_wo_noise"
 # label = "EMB_calo_topo_wo_noise"
 label = "EMEC_calo_wo_noise"
 calibrationFiles = [
-#    'EMBCaloClusters',
-#    'EMBCaloTopoClusters',
-#    'EMBCaloClustersWithNoise',
-#    'EMBCaloTopoClustersWithNoise'
-    'EMECCaloClusters',
+    # 'EMBCaloClusters',
+    # 'EMBCaloTopoClusters',
+    # 'EMBCaloClustersWithNoise',
+    # 'EMBCaloTopoClustersWithNoise'
+    # 'EMECCaloClusters',
+    # 'EMECCaloTopoClusters',
 ]
 # basedir = "../fullsim/run/test/clusters/"               # directory where the input files are
 # basedir = "../fullsim/run/test/clusters_with_noise/"     # directory where the input files are
