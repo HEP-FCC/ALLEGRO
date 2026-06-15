@@ -105,15 +105,12 @@ for cellID in cellIDs:
     print("System:", system)
     print("Readout:", readoutName)
     print("CellID encoding:", encoding)
-    if (system!=systemEB):
-        position = seg.position(cellID)
-    else:
-        volumeID = seg.volumeID(cellID);
-        # print("volumeID:", volumeID)
-        vc = volman.lookupContext(volumeID);
-        inSeg = seg.position(cellID);
-        outSeg = vc.localToWorld(inSeg);
-        position = outSeg
+    volumeID = seg.volumeID(cellID);
+    # print("volumeID:", volumeID)
+    vc = volman.lookupContext(volumeID);
+    inSeg = seg.position(cellID);
+    outSeg = vc.localToWorld(inSeg);
+    position = outSeg
     print(f"Position (rho/theta/phi): {position.rho()}, {position.theta()}, {position.phi()}")
     print(f"Position (rho/z/phi): {position.rho()}, {position.z()}, {position.phi()}")
     # Decode and print all fields

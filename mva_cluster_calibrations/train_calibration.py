@@ -17,55 +17,69 @@ readInputsFromCsv = False                                      # read input feat
 readInputsFromPkl = False                                      # read input features from root or from saved dataframe
 saveDataToCsv = False                                          # save data to CSV
 saveDataToPkl = True                                           # save data to pickle
-# csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"  # directory where we save/load data in csv/pkl format
+# cssplkDir = "."                                              # directory where we save/load data in csv/pkl format
+# csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"
 # csvpklDir = "../../run/paper_LArPb/training_reconstruction"
-csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
-# suffix = ""                                                  # suffix to append to model files
-suffix = "_LKrW"
+# csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
+csvpklDir = "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo"
+suffix = ""                                                    # suffix to append to model files
+# suffix = "_LKrW"
 doTraining = True                                              # if false, only plot Ereco/Etrue
 saveModelToONNX = True                                         # export model (also) to onnx portable format
 particle_PDG = 22                                              # PDGid of particle (not used - assumes particle with highest p is the good one)
 # particle_PDG = 11                                            # PDGid of particle (not used - assumes particle with highest p is the good one)
-useWeights = False                                             # give larger weight to lower energy particles (no effect..)
+useWeights = False                                             # give larger weight to lower energy particles (has no effect - need to generate more particle at low energy to have same effect)
 useExtraFeatures = True                                        # use also cluster theta, theta % deltaTheta, phi % deltaPhi as extra input features (no gain observed..)
 treeName = 'events'                                            # name of TTree in ROOT files
-clusterCollections = [                                         # collections for which we train the regression
-    'EMBCaloClusters',
-    'EMBCaloTopoClusters',
-#    'EMBCaloClustersWithNoise',
-#    'EMBCaloTopoClustersWithNoise'
+clusterCollections = [                                         # collections for which we train the regression - uncomment the ones you wish to calibrate
+    # 'EMBCaloClusters',
+    # 'EMBCaloTopoClusters',
+    # 'EMBCaloClustersWithNoise',
+    # 'EMBCaloTopoClustersWithNoise',
+    # 'EMECCaloClusters',
+    # 'EMECCaloTopoClusters',
 ]
 # dictionary of input files: path, filename, and whether to use merged file or not
 # in general I used to run directly over the merged file, but with very big productions
 # and noise on I started to have some overflow issue. This can be worked around
-# running on the unmerged files (usechain = True), though slower
+# running on the unmerged files (usechain = True), though slower.
+# Replace with your own production. Multiple files can be combined
 inputFiles = {
-    #"lowE": {
-    #    # 0.1-1 GeV
-    #    "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
-    #    "filename": "production_reconstruction_particle_gamma_lowE.root",
-    #    "usechain": False,
-    #},
+    # "lowE": {
+        # 0.1-1 GeV
+        # "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
+        # "filename": "production_reconstruction_particle_gamma_lowE.root",
+        # "usechain": False,
+        # endcap
+        # "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_300k_0_22/",
+        # "filename": "production_reconstruction_particle_gamma.root",
+        # "usechain": False
+    # },
     "midE": {
         # "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
         #"filename": "production_reconstruction_particle_gamma_jobid*.root",
         #"usechain": True,
         # 0.1-105 GeV
         # "basedir": "../../run/paper_LArPb/training_reconstruction/",
-        "basedir": "../../run/paper_LKrW/training_reconstruction_small/",
+        # "basedir": "../../run/paper_LKrW/training_reconstruction_small/",
+        # "filename": "production_reconstruction_particle_gamma.root",
+        # "usechain": False
+        # endcap
+        "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo/",
         "filename": "production_reconstruction_particle_gamma.root",
         "usechain": False
     },
-    "highE": {
+    #"highE": {
         # "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
         # "filename": "production_reconstruction_particle_gamma_highE.root",
         # "usechain": False,
         # 105-200 GeV
         # "basedir": "../../run/paper_LArPb/training_reconstruction_small_highE/",
-        "basedir": "../../run/paper_LKrW/training_reconstruction_small_highE/",
-        "filename": "production_reconstruction_particle_gamma.root",
-        "usechain": False
-    }
+        # "basedir": "../../run/paper_LKrW/training_reconstruction_small_highE/",
+        # "filename": "production_reconstruction_particle_gamma.root",
+        # "usechain": False
+    #}
+    
 }
 
 # -------------------------------------------------------------------------------------------
@@ -258,7 +272,7 @@ def plotImp(model, X, num=20, fig_size=(40, 20), clusters="clusters", imptype="g
                                                                      ascending=False)[0:num])
     plt.title('LightGBM Feature importance (%s)' % imptype)
     plt.tight_layout()
-    outfile = f'plots/lgbm_importances-{clusters}-energy-{emin}-{emax}.pdf'
+    outfile = f'plots/lgbm_importances-{clusters}-energy-{emin}-{emax}{suffix}.pdf'
     plt.savefig(outfile)
     print("File %s produced" % outfile)
     # plt.show()
@@ -384,13 +398,20 @@ def readROOTFileIntoPandas(inputfile, clusters, emin, emax, nLayers):
             print("No files found matching the pattern", filepath)
             print("Exiting ...")
             exit(0)
-    nLayersFromROOTFileShapeParams = sum(1 for s in shapeParameterNames if s.startswith("energy_fraction_EMB_layer_"))
+    nLayersFromROOTFileShapeParams = 0
+    if clusters[0:3] == "EMB":
+        nLayersFromROOTFileShapeParams = sum(1 for s in shapeParameterNames if s.startswith("energy_fraction_EMB_layer_"))
+    elif clusters[0:4] == "EMEC":
+        nLayersFromROOTFileShapeParams = sum(1 for s in shapeParameterNames if s.startswith("energy_fraction_EMEC_layer_"))
     if nLayersFromROOTFileShapeParams != nLayers:
         print(f"Number of layers in shape parameters ({nLayersFromROOTFileShapeParams}) does not match that passed as parameter to train ({nLayers}), quitting..")
         exit(0)
     inputFeaturePositions = [-1] * nLayers
     for iLayer in range(nLayers):
-        inputFeaturePositions[iLayer] = shapeParameterNames.index(f"energy_fraction_EMB_layer_{iLayer}")
+        if clusters[0:3] == "EMB":
+            inputFeaturePositions[iLayer] = shapeParameterNames.index(f"energy_fraction_EMB_layer_{iLayer}")
+        elif clusters[0:4] == "EMEC":
+            inputFeaturePositions[iLayer] = shapeParameterNames.index(f"energy_fraction_EMEC_layer_{iLayer}")
     if -1 in inputFeaturePositions:
         print("Some input feature could not be found, quitting..")
         exit(0)
@@ -686,7 +707,7 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
             # 'use_quantized_grad': True,
             'metric': {'l1', 'l2'},
             'early_stopping_rounds': 50,
-            'num_iteration': 3000,
+            'num_iteration': 4000,
             # 'verbose': -1,
             'device': device,
             # might need this to avoid overfitting. Will tranfer to gpu multiple times
@@ -751,4 +772,9 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
 
 # training
 for clusters in clusterCollections:
-    train(clusters, 0, 1000, False, '')
+    nLayers = 0
+    if clusters[0:3] == "EMB":
+        nLayers = 11
+    elif clusters[0:4] == "EMEC":
+        nLayers = 98
+    train(clusters, 0, 1000, False, '', nLayers)

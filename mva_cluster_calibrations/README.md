@@ -34,14 +34,14 @@ After that, every time you start from a fresh shell, do
 source env.sh
 ```
 ### Execution
-To train the BDT: adjust properly the parameters in the script train_calibration.py, including the name of the cluster collections to calibrate and the list of input files, and execute it with:
+To train the BDT: adjust properly the parameters in the script `train_calibration.py`, including the name of the cluster collections to calibrate and the list of input files, and execute it with:
 
 ```
 python train_calibration.py
 
 ```
 
-To evaluate the BDT performance: adjust properly the parameters in the script test_calibration.py, and execute it with:
+To evaluate the BDT performance: adjust properly the parameters in the script `test_calibration.py`, and execute it with:
 
 ```
 python test_calibration.py
@@ -56,3 +56,10 @@ The plot comparing the energy resolution for LAr+Pb and LKr+W barrel ECAL for th
 * overlay the two resolution curves in a single plot: `python plot_paper.py`
 
 ## Endcap
+
+The same code used to train and test the MVA calibration for the barrel also works for the endcap. One has to edit the parameters in the training and testing scripts (`train_calibration.py` and `test_calibration.py`) and then execute
+
+```
+python train_calibration.py
+python test_calibration.py
+```
