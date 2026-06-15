@@ -17,37 +17,44 @@ readInputsFromCsv = False                                      # read input feat
 readInputsFromPkl = False                                      # read input features from root or from saved dataframe
 saveDataToCsv = False                                          # save data to CSV
 saveDataToPkl = True                                           # save data to pickle
-# csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"  # directory where we save/load data in csv/pkl format
+# cssplkDir = "."                                              # directory where we save/load data in csv/pkl format
+# csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"
 # csvpklDir = "../../run/paper_LArPb/training_reconstruction"
 # csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
-csvpklDir = "../../run/paper_LArPb/training_reconstruction_endcap"
-suffix = ""                                                  # suffix to append to model files
+csvpklDir = "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo"
+suffix = ""                                                    # suffix to append to model files
 # suffix = "_LKrW"
 doTraining = True                                              # if false, only plot Ereco/Etrue
 saveModelToONNX = True                                         # export model (also) to onnx portable format
 particle_PDG = 22                                              # PDGid of particle (not used - assumes particle with highest p is the good one)
 # particle_PDG = 11                                            # PDGid of particle (not used - assumes particle with highest p is the good one)
-useWeights = False                                             # give larger weight to lower energy particles (no effect..)
+useWeights = False                                             # give larger weight to lower energy particles (has no effect - need to generate more particle at low energy to have same effect)
 useExtraFeatures = True                                        # use also cluster theta, theta % deltaTheta, phi % deltaPhi as extra input features (no gain observed..)
 treeName = 'events'                                            # name of TTree in ROOT files
-clusterCollections = [                                         # collections for which we train the regression
+clusterCollections = [                                         # collections for which we train the regression - uncomment the ones you wish to calibrate
     # 'EMBCaloClusters',
     # 'EMBCaloTopoClusters',
     # 'EMBCaloClustersWithNoise',
     # 'EMBCaloTopoClustersWithNoise',
-    'EMECCaloClusters',
+    # 'EMECCaloClusters',
+    # 'EMECCaloTopoClusters',
 ]
 # dictionary of input files: path, filename, and whether to use merged file or not
 # in general I used to run directly over the merged file, but with very big productions
 # and noise on I started to have some overflow issue. This can be worked around
-# running on the unmerged files (usechain = True), though slower
+# running on the unmerged files (usechain = True), though slower.
+# Replace with your own production. Multiple files can be combined
 inputFiles = {
-    #"lowE": {
-    #    # 0.1-1 GeV
-    #    "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
-    #    "filename": "production_reconstruction_particle_gamma_lowE.root",
-    #    "usechain": False,
-    #},
+    # "lowE": {
+        # 0.1-1 GeV
+        # "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
+        # "filename": "production_reconstruction_particle_gamma_lowE.root",
+        # "usechain": False,
+        # endcap
+        # "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_300k_0_22/",
+        # "filename": "production_reconstruction_particle_gamma.root",
+        # "usechain": False
+    # },
     "midE": {
         # "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
         #"filename": "production_reconstruction_particle_gamma_jobid*.root",
@@ -58,7 +65,7 @@ inputFiles = {
         # "filename": "production_reconstruction_particle_gamma.root",
         # "usechain": False
         # endcap
-        "basedir": "../../run/paper_LArPb/training_reconstruction_endcap/",
+        "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo/",
         "filename": "production_reconstruction_particle_gamma.root",
         "usechain": False
     },
@@ -68,9 +75,9 @@ inputFiles = {
         # "usechain": False,
         # 105-200 GeV
         # "basedir": "../../run/paper_LArPb/training_reconstruction_small_highE/",
-    #    "basedir": "../../run/paper_LKrW/training_reconstruction_small_highE/",
-    #    "filename": "production_reconstruction_particle_gamma.root",
-    #    "usechain": False
+        # "basedir": "../../run/paper_LKrW/training_reconstruction_small_highE/",
+        # "filename": "production_reconstruction_particle_gamma.root",
+        # "usechain": False
     #}
     
 }
@@ -700,7 +707,7 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
             # 'use_quantized_grad': True,
             'metric': {'l1', 'l2'},
             'early_stopping_rounds': 50,
-            'num_iteration': 3000,
+            'num_iteration': 4000,
             # 'verbose': -1,
             'device': device,
             # might need this to avoid overfitting. Will tranfer to gpu multiple times

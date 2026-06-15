@@ -2,10 +2,8 @@
 # print all constants and corresponding values in the compact files
 # The user can decide which subdetectors or other elements to show or not
 #
-import ROOT
 import dd4hep
 import os
-import sys
 import argparse
 
 parser = argparse.ArgumentParser(
@@ -30,7 +28,7 @@ elementsToShow=[
 #    "geom",
 #    "dettype",
 #    "readout",
-#    "bfield"
+    "bfield"
     ]
 
 def getElement(name):

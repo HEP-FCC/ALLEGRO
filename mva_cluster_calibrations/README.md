@@ -63,5 +63,3 @@ The same code used to train and test the MVA calibration for the barrel also wor
 python train_calibration.py
 python test_calibration.py
 ```
-
-The EMEC clusters have to be decorated in the digitisation+reconstruction step with the input features used by the MVA calibration.
