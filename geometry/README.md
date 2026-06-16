@@ -43,6 +43,7 @@ deactivate
 
 ## Workflow
   - Edit only .ipynb files in Jupyter
-  - Commit both .ipynb and .py
   - Do not manually edit the .py corresponding to the .ipynb
   - Use jupytext --sync <file.ipynb> if files are out of sync
+  - Commit both .ipynb and .py
+
