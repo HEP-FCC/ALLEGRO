@@ -1076,5 +1076,5 @@ ax.set_ylim(rmin - (15 + TICK_LEN + 5) * ratio, rmax + drend)
 ax.axis("off")
 
 plt.tight_layout()
-plt.show()
 plt.savefig("readout.pdf", bbox_inches="tight", pad_inches=0.02)
+plt.show()
