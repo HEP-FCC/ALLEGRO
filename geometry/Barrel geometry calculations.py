@@ -756,12 +756,18 @@ offset_theta = geo.offset_theta
 # ------------
 # GLOBAL STYLE
 # ------------
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"],
-})
-
+import shutil
+if shutil.which("latex") is not None:
+    print("LaTeX found - enabling full TeX rendering")
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.serif": ["Computer Modern Roman"],
+    })
+else:
+    print("LaTeX NOT found - using Matplotlib mathtext fallback")
+    plt.rcParams["text.usetex"] = False
+    plt.rcParams["mathtext.default"] = "regular"
 
 # ------------------
 # GRAPHIC PARAMETERS
@@ -1078,3 +1084,6 @@ ax.axis("off")
 plt.tight_layout()
 plt.savefig("readout.pdf", bbox_inches="tight", pad_inches=0.02)
 plt.show()
+# -
+
+
