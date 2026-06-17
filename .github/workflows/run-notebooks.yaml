@@ -1,0 +1,86 @@
+name: Run Jupyter Notebooks
+
+# this will run only modified notebook
+# but could also run all notebooks on schedule with
+# on:
+#   push:
+#     paths:
+#       - "geometry/*.ipynb"
+#   schedule:
+#     - cron: "0 2 * * *"
+
+on:
+  push:
+    paths:
+      - "geometry/*.ipynb"
+  pull_request:
+    paths:
+      - "geometry/*.ipynb"
+  workflow_dispatch:
+
+jobs:
+  run-notebooks:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/key4hep/key4hep-images/alma9-cvmfs
+      options: --privileged
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # important for git diff
+
+      - name: Get changed notebooks
+        id: changes
+        shell: bash
+        run: |
+          echo "Detecting changed notebooks..."
+          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep "^geometry/.*\.ipynb$" || true)
+          echo "Changed notebooks:"
+          echo "$FILES"
+          # Save to GitHub Actions output
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run changed notebooks
+        run: |
+             while read nb; do
+               jupyter nbconvert --to notebook --execute "$nb"
+             done < changed.txt
+      - name: Execute notebooks and export to HTML
+        if: steps.changes.outputs.files != ''
+        shell: bash
+        run: |
+          mkdir -p reports
+          while read nb; do
+            echo "Running $nb"
+            base=$(basename "$nb" .ipynb)
+
+            # Execute notebook
+            jupyter nbconvert \
+              --to notebook \
+              --execute "$nb" \
+              --output "${base}_executed.ipynb"
+
+	    # Convert to HTML
+            jupyter nbconvert \
+              --to html "${base}_executed.ipynb" \
+              --output "${base}.html"
+
+            # Move HTML to reports folder
+            mv "${base}.html" reports/
+          done <<< "${{ steps.changes.outputs.files }}"
+
+      - name: Upload artifact (output)
+        if: steps.changes.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: notebook-html-reports
+          path: reports/        uses: actions/upload-artifact@v4
+        with:
+          name: notebook-report
+          path: analysis.html
