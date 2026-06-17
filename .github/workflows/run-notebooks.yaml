@@ -80,7 +80,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: notebook-html-reports
-          path: reports/        uses: actions/upload-artifact@v4
-        with:
-          name: notebook-report
-          path: analysis.html
+          path: reports/
