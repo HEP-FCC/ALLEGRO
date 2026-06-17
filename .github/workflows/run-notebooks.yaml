@@ -35,8 +35,13 @@ jobs:
       - name: Execute notebooks and export to HTML
         shell: bash
         run: |
+          # setup environment
+          source /cvmfs/sft-nightlies.cern.ch/lcg/views/devkey-head/latest/x86_64-el9-gcc14-opt/setup.sh
+          # create output dir
           mkdir -p reports
+          # loop over notebooks
           for nb in geometry/*.ipynb; do
+            # Run notebook
             echo "Running $nb"
             base=$(basename "$nb" .ipynb)
             jupyter nbconvert --to notebook --execute "$nb" --output "${base}_executed.ipynb"
