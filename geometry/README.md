@@ -5,13 +5,17 @@
 3. execute script: `python printConstants.py`
 
 
-# ALLEGRO ECal barrel calculations
+# ALLEGRO ECal barrel calculations and sketches
 
-Do not setup the nightly (use a fresh shell if needed)
+The code can be run standalone or with the key4hep stack setup
+In the former case, the user has to setup a virtual environment.
+In the latter, the nightly has to be setup.
+Note that the features of the script that read the geometry parameter from k4geo can only be executed in the latter case.
+Jupytext is used to sync Jupyter notebooks with python scripts
 
 ## Initial setup
 
-The first time, setup a virtualenv environment with:
+If using the script without the key4hep stack, the first time, setup a virtualenv environment with:
 
 ```
 source setup.sh
@@ -19,18 +23,27 @@ source setup.sh
 
 ## Execution
 
-Load the environment and start jupyter with
+For the standalone version, load the environment with
 ```
 source env.sh
-jupyter-notebook
 ```
-(or `jupyter-lab`, as you prefer)
+Otherwise, setup the nightly
+
+Then, start jupyter:
+```
+jupyter-lab
+```
 
 Execute notebook <code>Barrel geometry calculations.ipynb</code>.
 
-The font that is used by default might be missing in your system, you can set it with <code>p["font.sans-serif"] = ["font name"]</code> 
-
-When done, deactivate the virtualenv environment with
+If using the standalone version: when done, deactivate the virtualenv environment with
 ```
 deactivate
 ```
+
+## Workflow
+  - Edit only .ipynb files in Jupyter
+  - Do not manually edit the .py corresponding to the .ipynb
+  - Use jupytext --sync <file.ipynb> if files are out of sync
+  - Commit both .ipynb and .py
+

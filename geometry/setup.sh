@@ -7,4 +7,5 @@ pip3 install sympy
 pip3 install jupyter
 pip3 install ipympl
 pip3 install ipywidgets
+pip3 install jupytext
 deactivate
