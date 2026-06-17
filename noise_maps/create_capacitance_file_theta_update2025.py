@@ -109,10 +109,10 @@ nMergedModules = [2]*numLayers
 tracesPerLayer = [i for i in range(numLayers)]
 for i in range(stripLayer+1, numLayers):
     tracesPerLayer[i] += 3 # 4 -> 3 to get it right
-    
+
 #JP orig: traces per layer = [0, 1, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-#JP fixed:    
-    
+#JP fixed:
+
 #JP restore strip layer trace count to zero - we will route the trace(s) between strips!
 #tracesPerLayer[stripLayer] = 0 #FIXME this screwed up one trick so had to disable. Strip capa becomes correct due to "capa density" set to zero.
 
@@ -200,11 +200,11 @@ current_electrode_length = 0
 for idx in range(numLayers):  # first pass to get all length parallel to the readout, real radial separation, inclination at the middle of the layer
 
     readoutLayerRadialLengths[idx] *= 10 # change from cm to mm
-    
+
     parallel_length = readoutLayerRadialLengths[idx] * dilution_factor
-    
+
     # Tricky point: in the xml geo, you define 'radial'segmentation, but these depths will be the one parallel to the plates after scaling by the dilution factor --> even when setting constant radial depth, the geometry builder will make constant parallel length step, not constant radial steps
-    
+
     readoutLayerParallelLengths.append(parallel_length)
     if outer:  # prepare the starting trace length when starting to extract by the back of the PCB
         trace_length_outer += parallel_length
@@ -234,7 +234,7 @@ for idx in range(numLayers):
     else:
         trace_length.append(trace_length_inner)
         trace_length_inner += readoutLayerParallelLengths[idx]
-        
+
 #JP The signal trace lengths are now the wrong way around in the array.
 # (this did not have impact when transferline capa was neglected)
 # Let's invert it and it should be fine for the capacitance calculation.
@@ -340,7 +340,7 @@ for i in range(0, len(readoutLayerParallelLengths)):
 
         #JP calculate with value from measurement instead; analytical formula has assumptions that are not fulfilled
         capacitanceTrace = nmultTrace*stripLineCapaDensity*traceLength
-        
+
         hCapTrace[i].SetBinContent(index + 1, capacitanceTrace)
 
         # Shield capacitance (microstrip)
@@ -365,7 +365,7 @@ for i in range(0, len(readoutLayerParallelLengths)):
         # Detector area (C = epsilon*A/d)
         area = abs(real_radial_separation[i] * (1 / tan(thetaNext) - 1 / tan(theta)) + real_radial_separation[i + 1] * (1 / tan(thetaNext) - 1 / tan(theta))
                  ) / 2. * (real_radial_separation[i+1] - real_radial_separation[i])
-                 
+
         # get the cell size perpendicular to the plate direction from the cell size on the circle at given radius and the inclination w.r.t. radial dir, then remove the PCB and lead thickness (no need for any factor here because we are perpendicular to the PCB and lead plates) --> gives the LAr gap size perpendicular
         distance = (2 * pi * (real_radial_separation[i+1] + real_radial_separation[i]) / 2. / Nplanes * cos (inclinations_wrt_radial_dir_at_middleRadialDepth[i]) - pcbThickness - passiveThickness) / 2. # divided by two because two lar gap per cell
         distance += hhv  # the capa is between signal plate and absorber --> need to add distance between HV plate and signal pad
@@ -376,7 +376,7 @@ for i in range(0, len(readoutLayerParallelLengths)):
         #JP Updated to include the effect of 100um dielectric layer
         capacitanceDetector = ( nMergedModules[i] * nMergedThetaCells[i] * 2 * epsilon0 * epsilonRLAr * epsilonR * area ) / ( (distance-hhv)*epsilonR + hhv*epsilonRLAr )
         # (this is the equation for the two-dielectric sandwitch capacitors, equivalent to two capacitors in series)
-        
+
         hCapDetector[i].SetBinContent(index + 1, capacitanceDetector)
         if capacitanceDetector > capa_det_max:
             capa_det_max = capacitanceDetector
@@ -406,7 +406,7 @@ for i in range(0, len(readoutLayerParallelLengths)):
 cellcapas.reverse()
 
 print("Cell capas per electrode:")
-print(cellcapas)        
+print(cellcapas)
 
 maximum = capa_shield_max
 

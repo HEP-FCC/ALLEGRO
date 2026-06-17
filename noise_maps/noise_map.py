@@ -1,11 +1,11 @@
 from k4FWCore.parseArgs import parser
 parser.add_argument("--useConstNoiseForEndcap", action="store_true", default=False, help="use constant noise for ecal endcap (legacy config, to be removed)")
 parser.add_argument("--detector", type=str, default="FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml", help="The detector xml file")
-parser.add_argument("--subdetectors", type=str, nargs="+", default=["ecalb", "ecale", "hcalb", "hcale"], 
+parser.add_argument("--subdetectors", type=str, nargs="+", default=["ecalb", "ecale", "hcalb", "hcale"],
                     help="List of subdetectors: ecalb, ecale, hcalb, hcale"
 )
 
-                    
+
 args = parser.parse_known_args()
 
 subdetector_map = {

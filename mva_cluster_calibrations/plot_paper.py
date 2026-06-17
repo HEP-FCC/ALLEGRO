@@ -7,7 +7,7 @@ import matplotlib as mpl
 mpl.rcParams.update({
     "font.family": "sans-serif",
     "font.sans-serif": ["Helvetica", "Nimbus Sans"],   # falls back if not available
-    
+
     "font.size": 14,                    # global base size
     "axes.labelsize": 16,
     "axes.titlesize": 16,

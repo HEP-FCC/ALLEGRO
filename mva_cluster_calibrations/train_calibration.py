@@ -88,7 +88,7 @@ inputFiles = {
         # "filename": "production_reconstruction_particle_gamma.root",
         # "usechain": False
     #}
-    
+
 }
 
 # -------------------------------------------------------------------------------------------
