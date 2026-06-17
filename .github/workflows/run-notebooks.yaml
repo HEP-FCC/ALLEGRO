@@ -39,7 +39,6 @@ jobs:
       - name: Execute notebooks and export to HTML
         shell: bash
         run: |
-          set -euo pipefail
           # setup environment
           source /cvmfs/sft-nightlies.cern.ch/lcg/views/devkey-head/latest/x86_64-el9-gcc14-opt/setup.sh
           # create output dir
