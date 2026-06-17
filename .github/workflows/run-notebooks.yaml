@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           echo "Detecting changed notebooks..."
-          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+          FILES=$(git diff --name-only HEAD^ HEAD \
             | grep "^geometry/.*\.ipynb$" || true)
           echo "Changed notebooks:"
           echo "$FILES"
