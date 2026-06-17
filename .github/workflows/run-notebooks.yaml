@@ -46,6 +46,10 @@ jobs:
           mkdir -p reports
           # loop over notebooks
           for nb in geometry/*.ipynb; do
+            # avoid executed notebooks
+            case "$nb" in
+              *_executed.ipynb) continue ;;
+            esac
             # Run notebook
             echo "Running $nb"
             base=$(basename "$nb" .ipynb)
