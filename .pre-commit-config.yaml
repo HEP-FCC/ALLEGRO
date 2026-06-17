@@ -37,3 +37,9 @@ repos:
         "-n", "Key4hep",
         "-u", "https://key4hep.github.io/key4hep-doc/",
         "-x", ".github/*", ".pre-commit-config.yaml", "README.md", "doc/ReleaseNotes.md", "-f"]
+  - repo: https://github.com/mwouts/jupytext
+    rev: v1.19.3
+    hooks:
+      - id: jupytext
+        args: [--sync]
+        files: ^geometry/.*\.ipynb$
