@@ -25,34 +25,35 @@ readDataFromJson = False                                 # if true, will read th
                                                          # that requires running the inference
 #doNoise = True                                          # include noise term b/E in fit to resolution vs E
 doNoise = False                                          # include noise term b/E in fit to resolution vs E
+targetUsesLog = False                                    # false: target is Etrue/Ecl; true: target is log(Etrue/Ecl)
 clusterCollections = [                                   # collections for which we test the performance
-    # 'EMBCaloClusters',
+    'EMBCaloClusters',
     # 'EMBCaloTopoClusters',
     # 'EMBCaloClustersWithNoise',
     # 'EMBCaloTopoClustersWithNoise'
     # 'EMECCaloClusters',
     # 'EMECCaloTopoClusters',
 ]
-# label = "EMB_topo_withnoise"
+label = "EMB_calo_withnoise"
 # label = "EMB_calo_topo_w_wo_noise"
 # label = "EMB_calo_topo_wo_noise"
-label = "EMEC_calo_wo_noise"
+# label = "EMEC_calo_wo_noise"
 calibrationFiles = [
-    # 'EMBCaloClusters',
+    'EMBCaloClusters',
     # 'EMBCaloTopoClusters',
     # 'EMBCaloClustersWithNoise',
     # 'EMBCaloTopoClustersWithNoise'
     # 'EMECCaloClusters',
     # 'EMECCaloTopoClusters',
 ]
-# basedir = "../fullsim/run/test/clusters/"               # directory where the input files are
-# basedir = "../fullsim/run/test/clusters_with_noise/"     # directory where the input files are
-# basedir = "../fullsim/run/test/clusters_nothreshold_topo/"     # directory where the input files are
-# basedir = "../fullsim/run/test/clusters_smallSWcluster/"     # directory where the input files are
-basedir = "../../run/paper_LArPb/clusters/"
+# basedir = "../fullsim/run/test/clusters/"                   # directory where the input files are
+# basedir = "../fullsim/run/test/clusters_with_noise/"        # directory where the input files are
+# basedir = "../fullsim/run/test/clusters_nothreshold_topo/"  # directory where the input files are
+# basedir = "../fullsim/run/test/clusters_smallSWcluster/"    # directory where the input files are
+# basedir = "../../run/paper_LArPb/clusters/"
 suffix=""
-# basedir = "../../run/paper_LKrW/clusters/"
-# suffix="_LKrW"
+basedir = "../../run/paper_LKrW/clusters/"
+suffix="_LKrW"
 
 particle = 'gamma'                                       # particle type
 # particle = 'e-'                                        # particle type
@@ -76,6 +77,7 @@ useAK = False                                            # true for awkward, fal
 modelFormat = 'onnx'                                     # use model stored in onnx or lgbm format
 #modelFormat = 'lgbm'                                    # use model stored in onnx or lgbm format
 useExtraFeatures = True                                  # use also cluster theta, theta % deltaTheta, phi % deltaPhi as extra input features
+useLongitudinalVars = False                              # if true will also use longitudinal barycenter and RMS as extra variables
 
 #emin=0
 #emax=10
@@ -580,6 +582,22 @@ if not readDataFromJson:
             theta_cl_mod_calo = theta_cl/deltaThetaCalo % 1
             phi_cl_mod_calo = phi_cl/deltaPhiCalo % 1
 
+            if useLongitudinalVars:
+                # longitudinal barycenter (sum(i*E_i)/sum(E_i)) - here i is the layer number, but it would be better to use the layer X/X0
+                layer_idx = np.arange(nLayers)
+                long_barycenter = np.sum(
+                    layer_idx[None, :] * energyFraction_vs_layer,
+                    axis=1
+                )
+                # longitudinal RMS (sqrt(sum(E_i*(i-d²))/sum(Ei)))
+                long_rms = np.sqrt(
+                    np.sum(
+                        energyFraction_vs_layer *
+                        (layer_idx[None, :] * long_barycenter[:, None])**2,
+                        axis=1
+                    )
+                )
+
             # plot the reconstructed cluster E, theta, phi
             plt.clf()
             plt.hist(e_cl,100,(E*0.8,E*1.2))
@@ -668,7 +686,12 @@ if not readDataFromJson:
             # pack the energy fractions and total energy into a numpy array for input to the regressor
             # and calculate the calibrated energy
             inputs = [energyFraction_vs_layer.transpose()]
-            if useExtraFeatures: inputs.extend([theta_cl, theta_cl_mod_calo, phi_cl_mod_calo])
+            
+            if useExtraFeatures:
+                inputs.extend([theta_cl, theta_cl_mod_calo, phi_cl_mod_calo])
+                if useLongitudinalVars:
+                    inputs.extend([long_barycenter, long_rms])
+
             inputs.append(e_cl)
             data = np.vstack(inputs)
             predict = []
@@ -689,7 +712,12 @@ if not readDataFromJson:
                 # print(emin_cl, emax_cl)
                 prediction = np.where((e_cl>=emin_cl) & (e_cl<emax_cl), predict[i], prediction)
                 i+=1
-            e_calib = e_cl*prediction
+            if targetUsesLog:
+                # if target is log(e_true/e_cl)
+                e_calib = e_cl*np.exp(prediction)
+            else:
+                # if target is e_true/e_cl
+                e_calib = e_cl*prediction
             de_calib = e_calib - p_part
             de_calib_over_e = de_calib/p_part
 

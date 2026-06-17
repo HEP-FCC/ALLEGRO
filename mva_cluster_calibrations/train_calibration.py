@@ -21,18 +21,26 @@ saveDataToPkl = True                                           # save data to pi
 # csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"
 # csvpklDir = "../../run/paper_LArPb/training_reconstruction"
 # csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
-csvpklDir = "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo"
-suffix = ""                                                    # suffix to append to model files
-# suffix = "_LKrW"
+csvpklDir = "../../run/paper_LKrW/training_reconstruction_big"
+# csvpklDir = "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo"
+# suffix = ""                                                    # suffix to append to model files
+suffix = "_LKrW"
 doTraining = True                                              # if false, only plot Ereco/Etrue
 saveModelToONNX = True                                         # export model (also) to onnx portable format
 particle_PDG = 22                                              # PDGid of particle (not used - assumes particle with highest p is the good one)
 # particle_PDG = 11                                            # PDGid of particle (not used - assumes particle with highest p is the good one)
 useWeights = False                                             # give larger weight to lower energy particles (has no effect - need to generate more particle at low energy to have same effect)
+targetUsesLog = False                                          # false: target is Etrue/Ecl; true: target is log(Etrue/Ecl)
 useExtraFeatures = True                                        # use also cluster theta, theta % deltaTheta, phi % deltaPhi as extra input features (no gain observed..)
+useLongitudinalVars = False                                    # if true will also use longitudinal barycenter and RMS as extra variables
+# objective = ''                                               # The regression objective - choose one below
+objective = 'regression_l1'                                    # minimises the bias
+# objective = 'regression_l2'                                  # in principle should be better for resolution, but seems to have no impact on it, and bias is worse
+# objective = 'huber'                                          # in principle should be better for resolution, but seems to have no impact on it, and bias is worse
+# objective = 'mape'                                           # wont convert to onnx
 treeName = 'events'                                            # name of TTree in ROOT files
 clusterCollections = [                                         # collections for which we train the regression - uncomment the ones you wish to calibrate
-    # 'EMBCaloClusters',
+    'EMBCaloClusters',
     # 'EMBCaloTopoClusters',
     # 'EMBCaloClustersWithNoise',
     # 'EMBCaloTopoClustersWithNoise',
@@ -45,29 +53,30 @@ clusterCollections = [                                         # collections for
 # running on the unmerged files (usechain = True), though slower.
 # Replace with your own production. Multiple files can be combined
 inputFiles = {
-    # "lowE": {
+    "lowE": {
         # 0.1-1 GeV
         # "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
         # "filename": "production_reconstruction_particle_gamma_lowE.root",
         # "usechain": False,
         # endcap
         # "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_300k_0_22/",
-        # "filename": "production_reconstruction_particle_gamma.root",
-        # "usechain": False
-    # },
+        "basedir": "../../run/paper_LKrW/training_reconstruction_big/",
+        "filename": "production_reconstruction_particle_gamma.root",
+        "usechain": False
+    },
     "midE": {
         # "basedir": "../../../fullsim/run/test/training_reconstruction_smallSWclusters_noise/root",
         #"filename": "production_reconstruction_particle_gamma_jobid*.root",
         #"usechain": True,
         # 0.1-105 GeV
         # "basedir": "../../run/paper_LArPb/training_reconstruction/",
-        # "basedir": "../../run/paper_LKrW/training_reconstruction_small/",
-        # "filename": "production_reconstruction_particle_gamma.root",
-        # "usechain": False
-        # endcap
-        "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo/",
+        "basedir": "../../run/paper_LKrW/training_reconstruction_big2/",
         "filename": "production_reconstruction_particle_gamma.root",
         "usechain": False
+        # endcap
+        # "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo/",
+        # "filename": "production_reconstruction_particle_gamma.root",
+        # "usechain": False
     },
     #"highE": {
         # "basedir": "../fullsim/run/test/training_reconstruction_smallSWclusters_noise",
@@ -456,11 +465,32 @@ def readROOTFileIntoPandas(inputfile, clusters, emin, emax, nLayers):
         theta_cl_mod_calo = theta_cl / deltaThetaCalo % 1
         phi_cl_mod_calo = phi_cl / deltaPhiCalo % 1
         inputs.extend([theta_cl, theta_cl_mod_calo, phi_cl_mod_calo])
+        if useLongitudinalVars:
+            # longitudinal barycenter (sum(i*E_i)/sum(E_i)) - here i is the layer number, but it would be better to use the layer X/X0
+            layer_idx = np.arange(nLayers)
+            long_barycenter = np.sum(
+                layer_idx[:, None] * efrac_layers,
+                axis=0
+            )
+            # longitudinal RMS (sqrt(sum(E_i*(i-d²))/sum(Ei)))
+            long_rms = np.sqrt(
+                np.sum(
+                    efrac_layers *
+                    (layer_idx[:, None] - long_barycenter[None, :])**2,
+                    axis=0
+                )
+            )
+            inputs.extend([long_barycenter, long_rms])
+
     inputs.append(e_cl)
     features = np.vstack(inputs)
 
     # calculate target
-    target = p_part / e_cl
+    if targetUsesLog:
+        target = np.log(p_part / e_cl)
+    else:
+        target = p_part / e_cl
+
 
     # combine and import into pandas dataframe
     data = np.vstack((features, target.transpose())).transpose()
@@ -696,12 +726,12 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
         params = {
             'task': 'train',
             'boosting': 'gbdt',
-            'objective': 'regression_l1',
-            # 'objective': 'regression_l2',
-            # 'objective': 'huber',  # wont convert to onnx...
+            'objective': objective,
+            # 'objective': 'regression_l2',  # in principle should be better for resolution, but seems to have no impact, and bias is worse
+            # 'objective': 'huber',            # in principle should be better for resolution, but seems to have no impact, and bias is worse
             # 'objective': 'mape',  # wont convert to onnx...
             # 'num_leaves': nInputs+1,
-            'num_leaves': 60,
+            'num_leaves': 128,
             'learning_rate': 0.01,
             # 'max_bin': 1023  # bin size 1023 cannot run on GPU
             # 'use_quantized_grad': True,
@@ -711,9 +741,9 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
             # 'verbose': -1,
             'device': device,
             # might need this to avoid overfitting. Will tranfer to gpu multiple times
-            # "feature_fraction": 0.9,
-            # "bagging_fraction": 0.8,
-            # "bagging_freq": 5,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 5,
         }
 
         # print the training settings
