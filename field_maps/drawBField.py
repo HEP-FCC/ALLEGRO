@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(
     )
 parser.parse_args()
 
-   
+
 
 # ------------------------------------------------------------------
 # Load detector geometry
@@ -28,7 +28,7 @@ detectorFile = path_to_detector + "/" + compactFile
 detector = dd4hep.Detector.getInstance()
 detector.fromXML(detectorFile)
 print("Loaded detector from compact file:", detectorFile)
-        
+
 
 # Grid definition
 # rho_vals = np.linspace(2650, 2750, 100) * mm   # 0 - 6 m
@@ -49,15 +49,15 @@ for i in range(R.shape[0]):
     for j in range(R.shape[1]):
         rho = R[i, j]
         z   = Z[i, j]
-        
+
         # phi = 0 ? x=rho, y=0
         pos = Position(rho, 0.0, z)
         B = detector.field().magneticField(pos) / tesla
-        
+
         # cylindrical components (phi = 0)
         Br = B.x()
         Bz_val = B.z()
-        
+
         Brho[i, j] = Br
         Bz[i, j]   = Bz_val
         Bmag[i, j] = np.sqrt(Br**2 + B.y()**2 + Bz_val**2)
@@ -67,7 +67,7 @@ for i in range(R.shape[0]):
 # Convert axes to mm for plotting
 R_mm = R / mm
 Z_mm = Z / mm
-        
+
 # --- Plot ---
 plt.figure(figsize=(8, 6))
 

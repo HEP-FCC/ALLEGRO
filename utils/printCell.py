@@ -119,7 +119,7 @@ def decode(cellID):
     #     name = field.name()
     #     value = coder.get(cellID, name)
     #     print(f"{name}: {value}")
-    
+
     fields = {}
     for field in coder.fields():
         name = field.name()
@@ -195,7 +195,7 @@ def print_random(n=10, showNeighbours=False, showNoise=False):
         print_entry(i, showNeighbours, showNoise)
 
 
-    
+
 # ================================
 # parse arguments
 # ================================

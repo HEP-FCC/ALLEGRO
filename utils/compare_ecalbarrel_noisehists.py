@@ -37,7 +37,7 @@ for name in hist_names:
                 if n_diff < 10:  # limit printout
                     print(f"{name}: diff at ({ix},{iy}) -> {v1} vs {v2}")
             if diff > max_diff:
-                max_diff = diff                
+                max_diff = diff
     if n_diff == 0:
         print(f"[OK] {name}: identical within tolerance")
     else:

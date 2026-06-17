@@ -65,7 +65,7 @@ y = np.array([1020, 1254, 1546, 1878, 2239, 2610])
 
 def parabolic_func(x, a, b):
     return np.sqrt(a * x **2 + b)
-    
+
 # Fit the curve
 popt, pcov = curve_fit(parabolic_func, x, y)
 
@@ -124,7 +124,7 @@ hCapTotal = []
 # electronic noise histograms
 h_elecNoise_fcc = [] # default total noise shield + detector capacitance (without trace capacitance) -> to be used in FCCSW as noise estimation
                      # Update2025: now trace capa included in all histograms!
-                     
+
 h_elecNoise_all = [] # total noise shield + trace + detector capacitance
 h_elecNoise_withTraceCap = [] # total noise. In 2025 update this is same as above.
 h_elecNoise_shield = []
@@ -132,7 +132,7 @@ h_elecNoise_trace = []
 h_elecNoise_detector = []
 
 #Read graphs from files
-for i in range (0, nLayers):  
+for i in range (0, nLayers):
     nameShield = "hCapacitance_shields"+str(i)
     hCapShield.append(fIn.Get(nameShield))
     nameTrace = "hCapacitance_traces"+str(i)
@@ -140,7 +140,7 @@ for i in range (0, nLayers):
     nameDetector = "hCapacitance_detector"+str(i)
     hCapDetector.append(fIn.Get(nameDetector))
 
-index = 0    
+index = 0
 nbins = hCapShield[index].GetNbinsX()
 thetaMin = hCapShield[index].GetXaxis().GetBinLowEdge(1)
 thetaMax = hCapShield[index].GetXaxis().GetBinUpEdge(nbins)
@@ -152,12 +152,12 @@ maximumNoiseWithTrace = 0.
 
 line_color_number = 1
 line_style_number = 1
-for i in range (0, nLayers):  
+for i in range (0, nLayers):
     if line_color_number == 10:
         line_color_number = 28
     if line_style_number > 10:
         line_style_number = 1
-    #Prepare electronic noise histograms    
+    #Prepare electronic noise histograms
     h_elecNoise_fcc.append( TH1F() )
     h_elecNoise_fcc[i].SetLineWidth(3)
     h_elecNoise_fcc[i].SetLineColor(line_color_number)
@@ -173,7 +173,7 @@ for i in range (0, nLayers):
     h_elecNoise_all[i].SetBins(nbins, thetaMin, thetaMax)
     h_elecNoise_all[i].SetTitle("Total electronic noise: shield + trace + detector capacitance; #theta; Electronic noise [MeV]")
     h_elecNoise_all[i].SetName("h_elecNoise_all_"+str(i+1))
-    
+
     h_elecNoise_withTraceCap.append( TH1F() )
     h_elecNoise_withTraceCap[i].SetLineWidth(3)
     h_elecNoise_withTraceCap[i].SetLineColor(line_color_number)
@@ -242,7 +242,7 @@ for i in range (0, nLayers):
             maximumNoiseWithTrace = noiseWithTrace
         if (capShield + capDetector)>maximumCap:
             maximumCap = (capShield + capDetector)
-            
+
         #fill histogram
         #default 2025: now trace capacitance added everywhere
         h_elecNoise_fcc[i].SetBinContent(ibin, noise)
@@ -326,7 +326,7 @@ cNoise.Print(os.path.join(output_folder, "cNoise.png"))
 
 cNoiseWithTrace = TCanvas("cNoiseWithTrace","Electronic noise with trace cap. per cell",800,600)
 cNoiseWithTrace.cd()
-for i, h in enumerate(h_elecNoise_withTraceCap):    
+for i, h in enumerate(h_elecNoise_withTraceCap):
     if i == 0:
         h.Draw("")
     else:
@@ -341,7 +341,7 @@ legendP = TLegend(0.1,0.6,0.43,0.9)
 legendP.SetHeader("Capacitance")
 
 cCapParts = TCanvas("cCapParts","",1200,1000)
-cCapParts.Divide(3,4)    
+cCapParts.Divide(3,4)
 for i in range (0, nLayers):
     cCapParts.cd(i+1)
     if i < 7:

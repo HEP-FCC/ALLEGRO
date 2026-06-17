@@ -28,7 +28,7 @@ geoservice = GeoSvc("GeoSvc",
                     OutputLevel = INFO)
 
 path_to_detector = os.environ.get("K4GEO", "")
-detectors_to_use=[ 
+detectors_to_use=[
     'FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml',
     #'Detector/DetFCCeeIDEA-LAr/compact/FCCee_DectEmptyMaster.xml',
     #'Detector/DetFCCeeIDEA-LAr/compact/FCCee_DectMaster.xml',
@@ -49,7 +49,7 @@ hist = SamplingFractionInLayers("hists",
                                  OutputLevel = DEBUG)
 hist.deposits.Path = ecalEndcapHitsName
 
-THistSvc().Output = ["rec DATAFILE='histSF_fccee_turbineECalEndcap.root' TYP='ROOT' OPT='RECREATE'"] 
+THistSvc().Output = ["rec DATAFILE='histSF_fccee_turbineECalEndcap.root' TYP='ROOT' OPT='RECREATE'"]
 THistSvc().PrintAll=True
 THistSvc().AutoSave=True
 THistSvc().AutoFlush=False

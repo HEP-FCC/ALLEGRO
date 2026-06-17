@@ -132,7 +132,7 @@ def getElement(name):
         return "bfield"
     else:
         return "unknown"
-    
+
 
 # ------------------------------------------------------------------
 # Load detector geometry
@@ -153,8 +153,8 @@ for name, handle in detector.constants():
     # 1. Always get the string representation first
     pname = str(name)
     element = getElement(pname)
-    
-    
+
+
     raw_val = str(detector.constantAsString(name))
     constants[pname] = (element, raw_val)
 
@@ -169,11 +169,11 @@ for element in elementsToShow:
             # 2. Try to evaluate it as a double
             # This will catch things like "50.18*degree" or "10*mm"
             val_double = detector.constantAsDouble(name)
-        
+
             # 3. Print the evaluated number
             print(f"{name:<50} | {element:<10} | {val_double:<20}")
-        
+
         except (RuntimeError, Exception):
-            # 4. If evaluation fails (like your Bitfield error), 
+            # 4. If evaluation fails (like your Bitfield error),
             # just print it as a raw string
             print(f"{name:<50} | {element:<10} | {raw_val:<20}")

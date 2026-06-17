@@ -190,7 +190,7 @@ class geometry:
     # steel_thickness: float = 0.0 # mm
     # total amount of glue in one passive plate: it is divided for the outside layer on top and bottom
     # glue_thickness: float = 0.0 # mm
-    
+
     # readout in between two absorber plates
     readout_thickness: float = 1.2 # mm
     # electrode segmentation, done in a weird way
@@ -226,7 +226,7 @@ class geometry:
     cryo_barrel_front: float = 0
     cryo_barrel_back: float = 0
     cryo_barrel_side: float = 0
-    # actual number of absorbers / readout planes around the barrel. 
+    # actual number of absorbers / readout planes around the barrel.
     # Possibly recomputed from absorber
     # and readout thicknesses, as well as intended size of double LAr gaps at rmin
     n_planes: int = 1536
@@ -290,7 +290,7 @@ class geometry:
             # formula in C++ builder (https://github.com/key4hep/k4geo/blob/77b5bbddc12916af74bc343c30bcbc25974cdcad/detector/calorimeter/ECalBarrel_NobleLiquid_InclinedTrapezoids_o1_v03_geo.cpp#L290)
             total_thickness = 2*self.embarrel_rmin*np.cos(self.alpha)*np.tan(np.pi / self.n_planes)
             self.lar_double_gap_thickness_rmin = total_thickness - (self.absorber_thickness + self.readout_thickness)
-        
+
         pass
 
     def scale_dimensions(self, scale: float):
@@ -756,12 +756,18 @@ offset_theta = geo.offset_theta
 # ------------
 # GLOBAL STYLE
 # ------------
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"],
-})
-
+import shutil
+if shutil.which("latex") is not None:
+    print("LaTeX found - enabling full TeX rendering")
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.serif": ["Computer Modern Roman"],
+    })
+else:
+    print("LaTeX NOT found - using Matplotlib mathtext fallback")
+    plt.rcParams["text.usetex"] = False
+    plt.rcParams["mathtext.default"] = "regular"
 
 # ------------------
 # GRAPHIC PARAMETERS
@@ -1078,3 +1084,6 @@ ax.axis("off")
 plt.tight_layout()
 plt.savefig("readout.pdf", bbox_inches="tight", pad_inches=0.02)
 plt.show()
+# -
+
+

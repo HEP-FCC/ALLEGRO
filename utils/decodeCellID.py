@@ -55,7 +55,7 @@ print("\n" + "="*60)
 print("\nLoaded detector from compact file:", detectorFile)
 print("")
 
- 
+
 # ------------------------------------------------------------------
 # Read encoding maps before loop, so that INFO messages from
 # segmentation classes do not pollute output later

@@ -42,23 +42,16 @@ jobs:
           # setup environment
           source /cvmfs/sft-nightlies.cern.ch/lcg/views/devkey-head/latest/x86_64-el9-gcc14-opt/setup.sh
           # create output dir
-          mkdir -p reports
+          mkdir -p reports executed
           # loop over notebooks
           for nb in geometry/*.ipynb; do
-            # avoid executed notebooks
-            case "$nb" in
-              *_executed.ipynb) continue ;;
-            esac
             # Run notebook
             echo "Running $nb"
             base=$(basename "$nb" .ipynb)
-            jupyter nbconvert --to notebook --execute "$nb" --output "${base}_executed.ipynb"
+            jupyter nbconvert --to notebook --execute "$nb" --output "${base}_executed.ipynb" --output-dir executed
 
             # Convert to HTML
-            jupyter nbconvert --to html "${base}_executed.ipynb" --output "${base}.html"
-
-            # Move HTML to reports folder
-            mv "${base}.html" reports/
+            jupyter nbconvert --to html "executed/${base}_executed.ipynb" --output "${base}.html" --output-dir reports
           done
 
       - name: Upload artifact (output)

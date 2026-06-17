@@ -173,7 +173,7 @@ def resol_curve_vs_invsqrtE_no_noise(x, b, c):
 # Define the Gaussian function
 def gauss(x, a, b, c):
     return (a/(sqrt(2*pi)*c))*np.exp(-0.5*((x-b)/c)**2)
-    
+
 # -------------------------------------------------------------------------------------------
 
 # Define function to calculate energy per layer and compile it with numba
@@ -198,7 +198,7 @@ def calc_cluster_energy_per_layer(ecv, cidv, cell_begin, cell_end, nLayers):
     # loop over the layers
     for layer in range(nLayers):
         # for each layer, select the cells belonging to that layers and put them in dedicated arrays
-        layer_mask = layerv == layer    
+        layer_mask = layerv == layer
         layer_ce = _e[layer_mask]
         ec[layer] = np.sum(layer_ce)
     return ec
@@ -309,7 +309,7 @@ def read_file(energy, particle, clusters, cells):
 
     arr = events.arrays(
         branches,
-        library=library)    
+        library=library)
     return arr
 
 # -------------------------------------------------------------------------------------------
@@ -432,7 +432,7 @@ if not readDataFromJson:
                 x_clusters = arr[clusters+'/'+clusters+'.position.x']
                 y_clusters = arr[clusters+'/'+clusters+'.position.y']
                 z_clusters = arr[clusters+'/'+clusters+'.position.z']
-            
+
             if useShapeParameters:
                 parBegin = arr[f'Augmented{clusters}/Augmented{clusters}.shapeParameters_begin']
                 shapeParameters = arr[f'_Augmented{clusters}_shapeParameters']
@@ -441,7 +441,7 @@ if not readDataFromJson:
                 lastcell_clusters = arr[clusters+'/'+clusters+'.hits_end']
                 id_cells = arr[cells+'/'+cells+'.cellID']
                 e_cells = arr[cells+'/'+cells+'.energy']
-        
+
             nentries = len(px_part)
             print('Entries = %d' % nentries)
 
@@ -457,14 +457,14 @@ if not readDataFromJson:
                                                            firstcell_clusters[entry][icl],
                                                            lastcell_clusters[entry][icl],
                                                            nLayers)
-        
+
                 def calc_energy_per_layer(entry, icl):
                     return c_calc_cluster_energy_per_layer(e_cells[entry],
                                                            id_cells[entry],
                                                            firstcell_clusters[entry][icl],
                                                            lastcell_clusters[entry][icl],
                                                            nLayers)
-        
+
 
             # Calculate and draw momentum and direction of primary particle
             # works with np, not tested with ak
@@ -490,23 +490,23 @@ if not readDataFromJson:
                 plt.xlabel('$E_{true}$ [GeV]')
                 plt.savefig('plots/e_true_energy_%d%s.pdf' % (energy, suffix))
                 #plt.show()
-        
+
                 # plot the generated particle spectra - theta
                 plt.clf()
                 plt.hist(theta_part*180/np.pi,50)
                 plt.xlabel('$\\theta_{true}$ $[{}^\\circ]$')
                 plt.savefig('plots/theta_true_energy_%d%s.pdf' % (energy, suffix))
                 #plt.show()
-        
+
                 # plot the generated particle spectra - phi
                 plt.clf()
                 plt.hist(phi_part,50)
                 plt.xlabel('$\phi_{true}$')
                 plt.savefig('plots/phi_true_energy_%d%s.pdf' % (energy, suffix))
                 #plt.show()
-    
+
             # Calculate and draw cluster distributions
-        
+
             # calculate energy and position of clusters with max energy
             keep = np.ones(nentries, dtype=bool)
             e_cl = np.zeros(nentries)
@@ -558,7 +558,7 @@ if not readDataFromJson:
                         ecl_vs_layer[entry] = calc_energy_per_layer_ak(entry, icl)
                     else:
                         ecl_vs_layer[entry] = calc_energy_per_layer(entry, icl)
-            
+
             if debug: print(ecl_vs_layer)
 
             # remove events without clusters
@@ -610,15 +610,15 @@ if not readDataFromJson:
             plt.xlabel('$\\theta_{cl}$ $[{}^\\circ]$')
             plt.savefig('plots/theta_reco_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
             #plt.show()
-        
+
             plt.clf()
             plt.hist(phi_cl,50)
             plt.xlabel('$\phi_{cl}$')
             plt.savefig('plots/phi_reco_energy_%d_%s%s.pdf' % (energy, clusters, suffix))
-        
+
             #plt.close()
-        
-        
+
+
             # draw the cluster energy per layer
             # fig = plt.figure()
             # ax = fig.add_subplot(111)
@@ -656,7 +656,7 @@ if not readDataFromJson:
                     # plt.legend()
                     # plt.savefig('plots/energy_in_layer%d_%s%s.pdf' % (layer, clusters, suffix))
                     # plt.show()
-    
+
             # calculate the residuals
             de = e_cl - p_part
             de_over_e = de/p_part
@@ -665,7 +665,7 @@ if not readDataFromJson:
             #fig = plt.figure()
             #ax = fig.add_subplot(111)
             ax.clear()
-    
+
             ax.hist(de_over_e, bins=50, label='raw', alpha=0.5, range=(-0.3,0.3))
             mean = np.mean(de_over_e)
             std = np.std(de_over_e)
@@ -686,7 +686,7 @@ if not readDataFromJson:
             # pack the energy fractions and total energy into a numpy array for input to the regressor
             # and calculate the calibrated energy
             inputs = [energyFraction_vs_layer.transpose()]
-            
+
             if useExtraFeatures:
                 inputs.extend([theta_cl, theta_cl_mod_calo, phi_cl_mod_calo])
                 if useLongitudinalVars:
@@ -746,7 +746,7 @@ if not readDataFromJson:
             ax.text(0.7, 0.70, 'std = %.3f $\pm$ %.3f' % (std, stderr), transform=ax.transAxes)
             print('Response bias raw from hist: %.1f%%' % (mean*100))
             print('Resolution raw from hist: %.1f%%' % (std*100))
-        
+
             (_mu,_sigma) = norm.fit(de_over_e)
             a = len(de_over_e)*(xmax-xmin)/nbins
             pars, pcov = opt.curve_fit(lambda x, m, sig: gauss(x, a, m, sig), centers, counts, p0=(_mu, _sigma))
@@ -794,7 +794,7 @@ if not readDataFromJson:
             _sigma = pars[1]
             _sigmaerr = perr[1]
             ax.plot(centers, a*norm.pdf(centers, _mu, _sigma))
-        
+
             ax.text(0.7,0.35,'$\mu$ = %.3f $\pm$ %.3f' % (_mu, _muerr), transform=ax.transAxes)
             ax.text(0.7,0.30,'$\sigma$ = %.3f $\pm$ %.3f' % (_sigma, _sigmaerr), transform=ax.transAxes)
 
@@ -823,7 +823,7 @@ if not readDataFromJson:
     #    plots.append((fig,ax))
     #    plt.close()
     #    os.remove("plots/e_resol_calib_energy_%d_%s.pkl" % (energy, clusters))
-        
+
     # Create a single multi-plot figure
     # num_rows = 4
     # num_cols = 3
@@ -886,13 +886,13 @@ for clusters in clusterCollections:
     print('\nCluster collection = %s\n' % clusters)
     if doNoise:
         popts, pcov = opt.curve_fit(resol_curve, energies_in_gev, resolutions_cal[clusters], sigma=resolutions_cal_err[clusters], p0=(0.1, 7.7, 0.2))
-    else:    
+    else:
         popts, pcov = opt.curve_fit(resol_curve_no_noise, energies_in_gev, resolutions_cal[clusters], sigma=resolutions_cal_err[clusters], p0=(7.7, 0.2))
     #popts, pcov = opt.curve_fit(resol_curve_with_d, energies_in_gev, resolutions_cal[clusters], sigma=resolutions_cal_err[clusters], p0=(7, 0., 0.))
     perr = np.sqrt(np.diag(pcov))
     popts = np.abs(popts)
     fitparams[clusters] = popts
-    
+
     if doNoise:
         print('Noise = %.0f +- %.0f MeV' % (popts[0]*10, perr[0]*10))
         print('a = %.1f +- %.1f %%' % (popts[1], perr[1]))
@@ -920,7 +920,7 @@ for clusters in clusterCollections:
                  linewidth=2.5,
                  color=col,
                  label="$\\frac{{{0:.1f}\\%}}{{\\sqrt{{E}}}}\\oplus {1:.1f}\\%$".format(popts[0], popts[1]))
-        
+
 plt.xlabel('$E_{true}$ [GeV]')
 plt.ylabel('Resolution [%]')
 plt.legend(loc='best')
@@ -945,7 +945,7 @@ for clusters in clusterCollections:
         popts, pcov = opt.curve_fit(resol_curve_vs_invsqrtE_no_noise, invsqrtenergies, resolutions_cal[clusters], sigma=resolutions_cal_err[clusters], p0=(10, 1))
     perr = np.sqrt(np.diag(pcov))
     popts = np.abs(popts)
-    
+
     if doNoise:
         print('Noise = %.0f +- %.0f MeV' % (popts[0]*10, perr[0]*10))
         print('a = %.1f +- %.1f %%' % (popts[1], perr[1]))
@@ -953,7 +953,7 @@ for clusters in clusterCollections:
     else:
         print('a = %.1f +- %.1f %%' % (popts[0], perr[0]))
         print('c = %.1f +- %.1f %%' % (popts[1], perr[1]))
-    
+
     col = sc[clusters].get_facecolors()[0].tolist()
     #xvals_curve = np.linspace(energies_in_gev.min(), energies_in_gev.max(), 200)
     xvals_curve = np.linspace(min(invsqrtenergies), max(invsqrtenergies), 200)
@@ -972,7 +972,7 @@ for clusters in clusterCollections:
                  linewidth=2.5,
                  color=col,
                  label="$\\frac{{{0:.1f}\\%}}{{\\sqrt{{E}}}}\\oplus {1:.1f}\\%$".format(popts[0], popts[1]))
-        
+
 plt.xlabel('$1/\sqrt{E_{true}}$ [GeV$^{-1/2}$]')
 plt.ylabel('Resolution [%]')
 plt.legend(loc='best')

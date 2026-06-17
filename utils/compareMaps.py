@@ -177,7 +177,7 @@ else:    # compare entries by looking for same cellId in two trees
             # no matching event in new tree
             missingEntries1.append((j,key2))
             continue
-        
+
     # check entries in first tree but not in second one
     for i in tqdm(range(tree1.GetEntries()), mininterval=0.2, disable=not use_tqdm):
         tree1.GetEntry(i)

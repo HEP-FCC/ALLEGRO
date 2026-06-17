@@ -18,14 +18,14 @@ int getSystem(uint64_t cellID ) {
 }
 
 int getWheel(uint64_t cellID) {
-  
+
   cellID = cellID >> 13;
   return (cellID & 0x7);
 
 }
 
 int getLayer(uint64_t cellID) {
-  
+
   cellID = cellID >> 16;
   return (cellID & 0xfff);
 
@@ -41,32 +41,32 @@ int getLayer(uint64_t cellID) {
 void turbineECalEndcap_autoCalib_analytic_topo::Calibrate()
 {
 
-  
+
   float etotperlayer[nLayers] = {};
   TH1F *h_e_mode[nLayers];
   TH1F *h_e_mean[nLayers];
-  
+
   TH2F* khist;
   TH1F* chist;
-  
+
   double k[nLayers*nLayers] = {};
   double c[nLayers] = {};
   double v[nLayers] = {};
-  
+
   std::vector<double> eperlayer[nLayers];
   std::vector<double> barrelE;
 
   if (fChain == 0) return;
-  
+
   Long64_t nentries = fChain->GetEntriesFast();
-  
+
   Long64_t nbytes = 0, nb = 0;
 
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
-  
+
     for (int iCluster = 0; iCluster < EMECCaloTopoClusters_; iCluster++) {
       double e[nLayers], eb = 0.;
       for (int i = 0; i < nLayers; i++) {
@@ -98,7 +98,7 @@ void turbineECalEndcap_autoCalib_analytic_topo::Calibrate()
       }
       barrelE.push_back(eb);
     }
-    
+
   }
 
   for (int l = 0; l < nLayers; l++) {
@@ -110,13 +110,13 @@ void turbineECalEndcap_autoCalib_analytic_topo::Calibrate()
   // now calculate all the coefficients and other values needed
   khist = new TH2F("k", "k", nLayers, 0, nLayers, nLayers, 0, nLayers);
   chist = new TH1F("c", "c", nLayers, 0, nLayers);
-  
+
   for (unsigned l = 0; l < nLayers; l++ ) {
     v[l] = 0;
     for (unsigned i = 0; i < eperlayer[0].size(); i++ ) {
       v[l] += (Etrue-barrelE[i])*eperlayer[l][i];
       for (int j = 0; j < nLayers; j++) {
-        k[l*nLayers+j] += eperlayer[l][i]*eperlayer[j][i];      
+        k[l*nLayers+j] += eperlayer[l][i]*eperlayer[j][i];
       }
     }
   }
@@ -130,17 +130,17 @@ void turbineECalEndcap_autoCalib_analytic_topo::Calibrate()
       k[l*nLayers + l] = 1.;
       std::cout << "Fixing up 0 diagonal element" << std::endl;
     }
-    for (int j = 0; j < nLayers; j++) {      
+    for (int j = 0; j < nLayers; j++) {
       khist->SetBinContent(l, j, k[l*nLayers+j]);
     }
   }
 
-  
+
   TMatrixD kmat(nLayers, nLayers, k);
   TMatrixD vmat( nLayers, 1, v);
-  
+
   TMatrixD cmat( nLayers, 1, c);
-  
+
   for (int i  =0 ; i < nLayers; i++) {
     if (abs(kmat(i,i))< 1.e-9) {
       std::cout << "Diagonal is 0 for " << i << std::endl;
@@ -149,11 +149,11 @@ void turbineECalEndcap_autoCalib_analytic_topo::Calibrate()
 
   Double_t elements[nLayers] = {0};
   TVectorD b(nLayers, elements);
-  
+
   Bool_t goodSol;
-  
+
   cmat = (kmat.Invert())*vmat;
-  
+
   std::cout << "ecalEndcapSamplingFraction = ";
   for (int i  =0 ; i < nLayers-1; i++) {
     if (cmat(i,0) != 0.) {

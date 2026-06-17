@@ -52,7 +52,7 @@ def get_layer(iWheel,iRho, iZ):
         layerOffset = EMECNumCalibRhoLayers[0]*EMECNumCalibZLayers[0]
     if (iWheel == 2):
         layerOffset = EMECNumCalibRhoLayers[0]*EMECNumCalibZLayers[0] +  EMECNumCalibRhoLayers[1]*EMECNumCalibZLayers[1]
-        
+
     return int(layerOffset + iZ/(EMECNumReadoutZLayers[iWheel]/EMECNumCalibZLayers[iWheel]) + EMECNumCalibZLayers[iWheel]*(iRho/(EMECNumReadoutRhoLayers[iWheel]/EMECNumCalibRhoLayers[iWheel]) ))
 
 #conversion from capacitance to noise in electrons, assuming cold electronics
@@ -74,11 +74,11 @@ filename = "endcap_capacitances.root"
 fIn = ROOT.TFile(filename, "r")
 hIn =fIn.Get("endcap_capacitances")
 
-output_folder = "noise_capa_ecalendcap" 
+output_folder = "noise_capa_ecalendcap"
 if not os.path.isdir(output_folder):
     os.mkdir(output_folder)
 
-fSave = ROOT.TFile(os.path.join(output_folder, "elecNoise_ecalendcap.root"),"RECREATE")   
+fSave = ROOT.TFile(os.path.join(output_folder, "elecNoise_ecalendcap.root"),"RECREATE")
 h_elecNoise_fcc = []
 
 for iWheel in range(0,nWheels) :
@@ -98,6 +98,6 @@ fSave.cd()
 for iHist in range (0, nWheels) :
     h_elecNoise_fcc[iHist].Write()
 
-fSave.Close()    
-    
-            
+fSave.Close()
+
+

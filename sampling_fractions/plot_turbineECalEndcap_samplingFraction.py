@@ -92,7 +92,7 @@ for ifile, filename in enumerate(calo_init.filenamesIn):
     hmerged = []
     # first merge adjacent layers and get histograms of SF
     for islice in range(startIndex, Nslices + startIndex):
-        h = TH1F() 
+        h = TH1F()
         h = f.Get(histName+str(islice))
         print("h ", histName+str(islice), "  is a ", type(h))
         # if first hist to be merged
@@ -130,7 +130,7 @@ for ifile, filename in enumerate(calo_init.filenamesIn):
           #  print(factor, " ", result)
             if factor < 0.2:
                 break
-        # print(result)        
+        # print(result)
         if result and result.Ndf() > 0:
             # if it fits terribly, try to fit in narrower range
             print("chi2 is ", result.Chi2() / result.Ndf())

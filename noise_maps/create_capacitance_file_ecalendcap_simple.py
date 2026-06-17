@@ -29,7 +29,7 @@ blade_angles = [ detector.constantAsDouble("EMECBladeAngle1"),
 n_cells_in_z = [detector.constantAsLong("EMECNumReadoutZLayersWheel1"),
                 detector.constantAsLong("EMECNumReadoutZLayersWheel2"),
                 detector.constantAsLong("EMECNumReadoutZLayersWheel3")]
-                
+
 z_depth = detector.constantAsDouble("EMEC_z2") - detector.constantAsDouble("EMEC_z1")
 
 
@@ -51,9 +51,9 @@ for iWheel in range(0,n_wheels):
 f_out.cd()
 h_cap.Write()
 f_out.Close()
- 
 
 
- 
-        
-    
+
+
+
+
