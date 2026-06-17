@@ -12,10 +12,10 @@ name: Run Jupyter Notebooks
 on:
   push:
     paths:
-      - "geometry/*.ipynb"
+      - "geometry/**/*.ipynb"
   pull_request:
     paths:
-      - "geometry/*.ipynb"
+      - "geometry/**/*.ipynb"
   workflow_dispatch:
 
 jobs:

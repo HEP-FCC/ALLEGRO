@@ -25,7 +25,7 @@ readDataFromJson = False                                 # if true, will read th
                                                          # that requires running the inference
 #doNoise = True                                          # include noise term b/E in fit to resolution vs E
 doNoise = False                                          # include noise term b/E in fit to resolution vs E
-targetUsesLog = True                                     # false: target is Etrue/Ecl; true: target is log(Etrue/Ecl)
+targetUsesLog = False                                    # false: target is Etrue/Ecl; true: target is log(Etrue/Ecl)
 clusterCollections = [                                   # collections for which we test the performance
     'EMBCaloClusters',
     # 'EMBCaloTopoClusters',
