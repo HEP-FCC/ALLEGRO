@@ -27,10 +27,13 @@ jobs:
       options: --privileged
 
     steps:
-      - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # important for git diff
+
+      - name: Mount CVMFS
+        run: /mount.sh
+
+      - name: Check CVMFS
+        run: ls -l /cvmfs/sw.hsf.org || true
 
       - name: Execute notebooks and export to HTML
         shell: bash
