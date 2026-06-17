@@ -80,6 +80,8 @@ def getElement(name):
         return "wrapper"
     elif name.startswith("EMBarrel"):
         return "ecalb"
+    elif name.startswith("BarCryo"):
+        return "ecalb"
     elif name.startswith("CryoBarrel"):
         return "ecalb"
     elif name in ["safeMargin", "readout_thickness", "planeLength", "phi", "Steel_thickness", "Glue_thickness", "Pb_thickness", "Pb_thickness_max", "Sensitive_thickness", "AirMarginThickness", "InclinationAngle"]:
