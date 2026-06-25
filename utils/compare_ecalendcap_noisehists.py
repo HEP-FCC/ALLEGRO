@@ -7,9 +7,9 @@ if len(sys.argv) != 3:
 f1 = ROOT.TFile.Open(sys.argv[1])
 f2 = ROOT.TFile.Open(sys.argv[2])
 hist_names = [
-    "noise_endcap_wheel0",
     "noise_endcap_wheel1",
-    "noise_endcap_wheel2"
+    "noise_endcap_wheel2",
+    "noise_endcap_wheel3"
 ]
 tolerance = 1e-9  # adjust if needed
 returnCode = 0
