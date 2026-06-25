@@ -14,7 +14,7 @@ run capacitance script for calculating capacitance maps
 
 ```python create_capacitance_file_theta_update2025.py```
 
-# Step 3
+### Step 3
 
 run capacitance-to-noise conversion script for getting noise maps
 
@@ -22,11 +22,11 @@ run capacitance-to-noise conversion script for getting noise maps
 
 Now you should have the new noise maps and supporting plots in a newly created directory
 
-# Step 4
+### Step 4
 
 create the noise map
 
-```k4run noise_map.py --detector FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml --subdetectors ecale```
+```k4run noise_map.py --detector FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml --subdetectors ecalb```
 
 The output is `cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged.root`.
 

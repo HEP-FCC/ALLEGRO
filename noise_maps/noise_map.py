@@ -1,5 +1,4 @@
 from k4FWCore.parseArgs import parser
-parser.add_argument("--useConstNoiseForEndcap", action="store_true", default=False, help="use constant noise for ecal endcap (legacy config, to be removed)")
 parser.add_argument("--detector", type=str, default="FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml", help="The detector xml file")
 parser.add_argument("--subdetectors", type=str, nargs="+", default=["ecalb", "ecale", "hcalb", "hcale"],
                     help="List of subdetectors: ecalb, ecale, hcalb, hcale"
@@ -22,6 +21,7 @@ detectors = [subdetector_map[s] for s in args[0].subdetectors]
 
 ecalBarrelNumLayers = 11
 ecalEndcapNumLayers = 98
+ecalEndcapNumWheels = 3
 hcalBarrelNumLayers = 13
 hcalEndcapNumLayers = 37
 
@@ -41,6 +41,7 @@ geoservice = GeoSvc("GeoSvc")
 path_to_detector = os.environ.get("K4GEO", "")
 compactFile = args[0].detector
 full_path = os.path.join(path_to_detector, compactFile)
+import sys
 if not os.path.isfile(full_path):
     print(f"Error: compact file '{full_path}' does not exist.", file=sys.stderr)
     sys.exit(1)
@@ -74,18 +75,18 @@ if "ecalBarrel" in detectors:
     ECalBarrelPositionsTool = CellPositionsECalBarrelModuleThetaSegTool("CellPositionsECalBarrel",
                                                                         readoutName=ecalBarrelReadoutName)
 
-    from Configurables import NoiseCaloCellsVsThetaFromFileTool
-    ECalBarrelNoiseTool = NoiseCaloCellsVsThetaFromFileTool("NoiseCaloCellsVsThetaFromFileTool",
-                                                            cellPositionsTool=ECalBarrelPositionsTool,
-                                                            readoutName=ecalBarrelReadoutName,
-                                                            noiseFileName=ecalBarrelNoiseFile,
-                                                            elecNoiseRMSHistoName=ecalBarrelNoiseRMSHistName,
-                                                            setNoiseOffset=False,
-                                                            activeFieldName="layer",
-                                                            addPileup=False,
-                                                            numRadialLayers=ecalBarrelNumLayers,
-                                                            scaleFactor=1 / 1000.,  # MeV to GeV
-                                                            OutputLevel=INFO)
+    from Configurables import NoiseCaloCellsFromFileBarrelTool
+    ECalBarrelNoiseTool = NoiseCaloCellsFromFileBarrelTool("NoiseCaloCellsFromFileBarrelTool",
+                                                           cellPositionsTool=ECalBarrelPositionsTool,
+                                                           readoutName=ecalBarrelReadoutName,
+                                                           noiseFileName=ecalBarrelNoiseFile,
+                                                           elecNoiseRMSHistoName=ecalBarrelNoiseRMSHistName,
+                                                           setNoiseOffset=False,
+                                                           activeFieldName="layer",
+                                                           addPileup=False,
+                                                           numHistograms=ecalBarrelNumLayers,
+                                                           scaleFactor=1 / 1000.,  # MeV to GeV
+                                                           OutputLevel=INFO)
 
     readoutNames += [ecalBarrelReadoutName]
     systemNames += ["system"]
@@ -98,24 +99,29 @@ else:
     ECalBarrelNoiseTool = None
 
 if "ecalEndcap" in detectors:
-    # in current map
-    if args[0].useConstNoiseForEndcap:
-        from Configurables import ConstNoiseTool
-        ECalEndcapNoiseTool = ConstNoiseTool("ECalEndcapNoiseTool",
-                                             detectors=["ECAL_Endcap"],
-                                             detectorsNoiseRMS=[1e-12],
-                                             OutputLevel=DEBUG)
-    else:
-        ecalEndcapNoiseFile =    "./noise_capa_ecalendcap/elecNoise_ecalendcap.root"
-        if not os.path.isfile(ecalEndcapNoiseFile):
-            print(f"Error: noise file '{ecalEndcapNoiseFile}' does not exist.", file=sys.stderr)
-            sys.exit(1)
-        from Configurables import NoiseCaloCellsTurbineEndcapFromFileTool
-        ECalEndcapNoiseTool = NoiseCaloCellsTurbineEndcapFromFileTool("NoiseCaloCellsTurbineEndcapFromFileTool",
-                                                                      noiseFileName=ecalEndcapNoiseFile,
-                                                                      addPileup=False,
-                                                                      scaleFactor = 1/1000., #MeV to GeV
-                                                                      elecNoiseRMSHistoName="noise_endcap_wheel")
+    ecalEndcapNoiseFile =    "./noise_capa_ecalendcap/elecNoise_ecalendcap.root"
+    if not os.path.isfile(ecalEndcapNoiseFile):
+        print(f"Error: noise file '{ecalEndcapNoiseFile}' does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    # cell positioning and noise tool for the ecal endcap
+    from Configurables import CellPositionsECalEndcapTurbineSegTool
+    ECalEndcapPositionsTool = CellPositionsECalEndcapTurbineSegTool("CellPositionsECalEndcap",
+                                                                    readoutName=ecalEndcapReadoutName)
+
+    from Configurables import NoiseCaloCellsFromFileTurbineEndcapTool
+    ECalEndcapNoiseTool = NoiseCaloCellsFromFileTurbineEndcapTool("NoiseCaloCellsFromFileTurbineEndcapTool",
+                                                                  cellPositionsTool=ECalEndcapPositionsTool,
+                                                                  readoutName=ecalEndcapReadoutName,
+                                                                  noiseFileName=ecalEndcapNoiseFile,
+                                                                  elecNoiseRMSHistoName="noise_endcap_wheel",
+                                                                  setNoiseOffset=False,
+                                                                  activeFieldName="wheel",
+                                                                  addPileup=False,
+                                                                  numHistograms=ecalEndcapNumWheels,
+                                                                  scaleFactor = 1/1000., #MeV to GeV
+                                                                  OutputLevel=INFO)
+
     readoutNames += [ecalEndcapReadoutName]
     systemNames += ["system"]
     systemValues += [ecalEndcapSysId]

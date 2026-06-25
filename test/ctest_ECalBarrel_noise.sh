@@ -19,7 +19,7 @@ echo "# Creating capacitance file #"
 echo "#############################"
 echo
 python $ALLEGRO/noise_maps/create_capacitance_file_theta_update2025.py || exit 1
-outFile=capacitances_perSource_ecalBarrelFCCee_theta_update2025.root
+outFile=root/capacitances_perSource_ecalBarrelFCCee_theta_update2025.root
 if [ ! -f $outFile ]; then
     echo "Output file missing"
     exit -1
