@@ -82,7 +82,7 @@ fSave = ROOT.TFile(os.path.join(output_folder, "elecNoise_ecalendcap.root"),"REC
 h_elecNoise_fcc = []
 
 for iWheel in range(0,nWheels) :
-    hNoise = ROOT.TH2F("noise_endcap_wheel"+str(iWheel), "noise_endcap_wheel"+str(iWheel), EMECNumReadoutZLayers[iWheel], 0, EMECNumReadoutZLayers[iWheel], EMECNumReadoutRhoLayers[iWheel], 0, EMECNumReadoutRhoLayers[iWheel])
+    hNoise = ROOT.TH2F("noise_endcap_wheel"+str(iWheel+1), "noise_endcap_wheel"+str(iWheel+1), EMECNumReadoutZLayers[iWheel], 0, EMECNumReadoutZLayers[iWheel], EMECNumReadoutRhoLayers[iWheel], 0, EMECNumReadoutRhoLayers[iWheel])
     for iZ in range (0, EMECNumReadoutZLayers[iWheel]) :
         for iRho in range (0, EMECNumReadoutRhoLayers[iWheel]) :
             layer = get_layer(iWheel, iRho, iZ)
