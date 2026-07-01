@@ -34,6 +34,7 @@ args = parser.parse_args()
 print("")
 
 ROOT.gROOT.SetBatch()
+ROOT.EnableImplicitMT()
 
 nevts = args.nevts
 filename1 = args.file1
@@ -241,6 +242,8 @@ else:    # compare entries by looking for same cellId in two trees
     if debugprint > 0 and badEntries:
         nentries = min(debugprint, len(badEntries))
         print(f"\nDetails of first {nentries} mismatches:")
+        print(f"File1:", filename1)
+        print(f"File2:", filename2)
         for idx in range(nentries):
             i, j = badEntries[idx]
             print("\nFile 1:", i, "File 2:", j)
