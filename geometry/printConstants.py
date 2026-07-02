@@ -19,6 +19,7 @@ elementsToShow=[
 #    "mdi",
 #    "vertex",
 #    "dch",
+#    "stt",
 #    "wrapper",
     "ecalb",
     "ecalec",
@@ -28,33 +29,28 @@ elementsToShow=[
 #    "geom",
 #    "dettype",
 #    "readout",
-    "bfield"
+    "bfield",
+    "unknown"
     ]
 
 def getElement(name):
-    if name.startswith("BP"):
+    if name.startswith((
+            "BP",
+            "QD0",
+            "Collimator",
+            "BeamCal",
+            "SeparatedBeamPipe",
+            "SynchRadMaskSize",
+            "MiddleOfSRMask_z",
+            "CompSol",
+            "Kicker"
+    )):
         return "mdi"
     elif "BeamPipe" in name:
         return "mdi"
     elif "beampipe" in name:
         return "mdi"
-    elif name.startswith("QD0"):
-        return "mdi"
-    elif name.startswith("Collimator"):
-        return "mdi"
     elif "HOMAbsorber" in name:
-        return "mdi"
-    elif name.startswith("BeamCal"):
-        return "mdi"
-    elif name.startswith("SeparatedBeamPipe"):
-        return "mdi"
-    elif name.startswith("SynchRadMaskSize"):
-        return "mdi"
-    elif name.startswith("MiddleOfSRMask_z"):
-        return "mdi"
-    elif name.startswith("CompSol"):
-        return "mdi"
-    elif name.startswith("Kicker"):
         return "mdi"
     elif name=="CrossingAngle":
         return "mdi"
@@ -66,29 +62,19 @@ def getElement(name):
         return "mdi"
     elif name=="env_safety":
         return "mdi"
-    elif name.startswith("VTX"):
+    elif name.startswith(("VTX", "RSU")):
         return "vertex"
     elif "VXD" in name:
         return "vertex"
     elif "Vertex" in name:
         return "vertex"
-    elif name.startswith("RSU"):
-        return "vertex"
     elif "DCH" in name:
         return "dch"
     elif "SiWr" in name:
         return "wrapper"
-    elif name.startswith("EMBarrel"):
-        return "ecalb"
-    elif name.startswith("BarCryo"):
-        return "ecalb"
-    elif name.startswith("CryoBarrel"):
+    elif name.startswith(("EMBarrel", "BarECal", "BarCryo", "CryoBarrel", "NLiqBathThickness", "Bath_r")):
         return "ecalb"
     elif name in ["safeMargin", "readout_thickness", "planeLength", "phi", "Steel_thickness", "Glue_thickness", "Pb_thickness", "Pb_thickness_max", "Sensitive_thickness", "AirMarginThickness", "InclinationAngle"]:
-        return "ecalb"
-    elif name.startswith("NLiqBathThickness"):
-        return "ecalb"
-    elif name.startswith("Bath_r"):
         return "ecalb"
     elif "ECAL_Barrel" in name:
         return "ecalb"
@@ -102,11 +88,7 @@ def getElement(name):
         return "ecalec"
     elif "Blade" in name:
         return "ecalec"
-    elif name.startswith("nUnitCells"):
-        return "ecalec"
-    elif name.startswith("CryoEndcap"):
-        return "ecalec"
-    elif name.startswith("BathThickness"):
+    elif name.startswith(("nUnitCells", "CryoEndcap", "BathThickness")):
         return "ecalec"
     elif name in ["nWheels", "NobleLiquidGap"]:
         return "ecalec"
@@ -132,6 +114,10 @@ def getElement(name):
         return "readout"
     elif name.startswith("Solenoid"):
         return "bfield"
+    elif name.startswith("STT"):
+        return "stt"
+    elif "STT" in name:
+        return "stt"
     else:
         return "unknown"
 
@@ -140,6 +126,7 @@ def getElement(name):
 # Load detector geometry
 # ------------------------------------------------------------------
 compactFile = "FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml"
+# compactFile = "FCCee/ALLEGRO/compact/ALLEGRO_o2_v01/ALLEGRO_o2_v01.xml"
 path_to_detector = os.environ.get("K4GEO", "")
 detectorFile = path_to_detector + "/" + compactFile
 detector = dd4hep.Detector.getInstance()
