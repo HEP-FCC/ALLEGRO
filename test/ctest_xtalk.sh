@@ -28,7 +28,7 @@ fi
 echo "Comparing new map to reference one. If the test fails, you might need to update the reference"
 refFile="xtalk_neighbours_map_ecalB_thetamodulemerged.root"
 if [ ! -f $refFile ]; then
-    wget "https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/"$refFile
+    wget -nv "https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/"$refFile
 fi
 python $ALLEGRO/utils/compareMaps.py xtalk $outFile $refFile  --debugevts 5 || exit 1
 rm $refFile

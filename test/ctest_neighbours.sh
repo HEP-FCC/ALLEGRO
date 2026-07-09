@@ -38,7 +38,7 @@ echo "#############################"
 echo
 refFile="neighbours_map_ecalB_thetamodulemerged_ecalE_turbine_hcalB_hcalEndcap_phitheta.root"
 if [ ! -f $refFile ]; then
-    wget https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
+    wget -nv https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
 fi
 if [ ! -f $refFile ]; then
     echo "Failed to download reference file"
