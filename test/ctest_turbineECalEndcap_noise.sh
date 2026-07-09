@@ -46,7 +46,7 @@ echo "#############################"
 echo
 refFile=elecNoise_ecalendcap.root
 if [ ! -f $refFile ]; then
-    wget https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
+    wget -nv https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
 fi
 if [ ! -f $refFile ]; then
     echo "Failed to download reference file"
@@ -79,7 +79,7 @@ mv $outFile tmp
 refFile=cellNoise_map_endcapTurbine_electronicsNoiseLevel.root
 outFile=tmp/$outFile
 if [ ! -f $refFile ]; then
-    wget https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
+    wget -nv https://fccsw.web.cern.ch/fccsw/filesForSimDigiReco/ALLEGRO/ALLEGRO_o1_v03/$refFile
 fi
 if [ ! -f $refFile ]; then
     echo "Failed to download reference file"
