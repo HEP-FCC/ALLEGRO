@@ -90,8 +90,6 @@ for iWheel in range(0,nWheels) :
             binIndex = hIn.GetBin(iWheel+1, iZ+1)
             cap = hIn.GetBinContent(binIndex)
             noise_RMS = get_noise_charge_rms(cap) / ref_charge_1mev
-            if (noise_RMS < 0) :
-                print(cap, get_noise_charge_rms(cap), ref_charge_1mev)
             hNoise.Fill(iZ, iRho, noise_RMS)
 
     h_elecNoise_fcc.append(hNoise)
