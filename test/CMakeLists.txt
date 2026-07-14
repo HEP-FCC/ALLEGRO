@@ -45,10 +45,10 @@ add_test(NAME ctest_turbineECalEndcap_noise
 set_tests_properties(ctest_turbineECalEndcap_noise PROPERTIES FIXTURES_SETUP ecalendcap_noise)
 
 # test not run by default (slow)
-# add_test(NAME ctest_fulldet_noise
-#                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
-#                COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_fulldet_noise.sh)
-# set_tests_properties(ctest_fulldet_noise PROPERTIES FIXTURES_REQUIRED "ecalbarrel_noise;ecalendcap_noise")
+add_test(NAME ctest_fulldet_noise
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_fulldet_noise.sh)
+set_tests_properties(ctest_fulldet_noise PROPERTIES FIXTURES_REQUIRED "ecalbarrel_noise;ecalendcap_noise")
 
 add_test(NAME ctest_neighbours
                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary

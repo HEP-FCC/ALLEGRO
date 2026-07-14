@@ -87,7 +87,7 @@ echo
 #     echo "Failed to download reference file"
 #     exit -1
 # fi
-# python $ALLEGRO/utils/compareMaps.py noise $outFile $refFile  --debugevts 5 || exit 1
+# $ALLEGRO/install/bin/compareMaps noise $refFile $outFile --debug-events 5 -m 1 || exit 1
 # rm $refFile
 # mv $outFile .
 
