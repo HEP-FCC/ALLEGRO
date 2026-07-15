@@ -2,6 +2,8 @@
 
 ## Per-layer sampling fractions
 
+### Recipe
+
 Average per-layer sampling fractions used in ALLEGRO o1_v03 and o2_v01 as of July 2026 have been calculated as follows, using a simulated sample (10k events) of electrons, 20 GeV, flat theta distribution, magnetic field on:
 
 1. Setup the release
@@ -30,14 +32,23 @@ cd run
 ./run_all_chain.sh
 ```
 
-The sampling fractions are saved in the file `sampling/SF.json` of the output directory
+The sampling fractions are saved in the file `sampling/SF.json` of the output directory.
+This directory also contains plots of the gaussian fits used to determine the average value of the SF, as well as the root files produced by the simulations.
 
-Note 1: If you want to look at SFs vs E (10-20-50-100 GeV) or theta (E=10 GeV, theta = 50-60-70-80-90 degrees) do
+### How the code works
+
+- the xml file of of the ECAL barrel used for the simulation (and reconstruction) is replaced with an xml file in which also the passive material is made active.
+- the simulated files are reconstructed with the reconstruction script `FCC-scripts/fcc_ee_samplingFraction_inclinedEcal.py` that schedules the algorithm SamplingFractionInLayers to fill histograms of the active and total energy deposited in each layer and the sampling fraction.
+- the histograms in the ROOT files are then fit to determine the average value with the script `FCC-scripts/FCC_calo_analysis_cpp/plot_samplingFraction.py`
+
+### Notes
+
+1. If you want to look at SFs vs E (10-20-50-100 GeV) or theta (E=10 GeV, theta = 50-60-70-80-90 degrees) do
 ```
 doStudySFvsETheta=1
 ```
 
-Note 2: the script runs the jobs in parallel on multiple cores, the number of cores to be used can be modified in `run/runParallel.py` (variable `nCores`)
+2. the script runs the jobs in parallel on multiple cores, the number of cores to be used can be modified in `run/runParallel.py` (variable `nCores`)
 
 
 
