@@ -13,19 +13,23 @@ source FCC-scripts/bootstrap.sh
 ```
 
 2. Modify the code
+
 Edit the file `sampling/run/run_all_chain.sh`, and set
 ```
 doSamplingFractions=1
 ```
+
 Set the other doXXX flags to 0
 
 3. Run the code
+
 Start from a fresh shell, go to the sampling folder
 ```
 source env.sh
 cd run
 ./run_all_chain.sh
 ```
+
 The sampling fractions are saved in the file `sampling/SF.json` of the output directory
 
 Note 1: If you want to look at SFs vs E (10-20-50-100 GeV) or theta (E=10 GeV, theta = 50-60-70-80-90 degrees) do
