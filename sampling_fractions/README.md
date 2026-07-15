@@ -1,5 +1,43 @@
-# Recipes to update Endcap sampling fractions
+# ECAL barrel
 
+## Per-layer sampling fractions
+
+Average per-layer sampling fractions have been calculated as follows, using a simulated sample (10k events) of electrons, 20 GeV, flat theta distribution, magnetic field on:
+
+1. Setup the release
+```
+mkdir sampling
+cd sampling
+git clone ssh://git@gitlab.cern.ch:7999/gmarchio/FCC-scripts.git
+source FCC-scripts/bootstrap.sh
+```
+
+2. Modify the code
+Edit the file `sampling/run/run_all_chain.sh`, and set
+```
+doSamplingFractions=1
+```
+Set the other doXXX flags to 0
+
+3. Run the code
+Start from a fresh shell, go to the sampling folder
+```
+source env.sh
+cd run
+./run_all_chain.sh
+```
+The sampling fractions are saved in the file `sampling/SF.json` of the output directory
+
+Note 1: If you want to look at SFs vs E (10-20-50-100 GeV) or theta (E=10 GeV, theta = 50-60-70-80-90 degrees) do
+```
+doStudySFvsETheta=1
+```
+
+Note 2: the script runs the jobs in parallel on multiple cores, the number of cores to be used can be modified in `run/runParallel.py` (variable `nCores`)
+
+
+
+# ECAL endcap
 
 There are two different approaches available for the endcap, one based on a direct assessment of the sampling fraction of each cell, and one based on an empirical determination of the calibration constant for each cell.
 
