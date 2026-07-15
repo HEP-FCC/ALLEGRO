@@ -1,8 +1,6 @@
 models/
 plots/
 *.root
-test.py
-trainOptVar.py
 venv/
 *~
 *.json
