@@ -2,7 +2,7 @@
 
 ## Per-layer sampling fractions
 
-Average per-layer sampling fractions have been calculated as follows, using a simulated sample (10k events) of electrons, 20 GeV, flat theta distribution, magnetic field on:
+Average per-layer sampling fractions used in ALLEGRO o1_v03 and o2_v01 as of July 2026 have been calculated as follows, using a simulated sample (10k events) of electrons, 20 GeV, flat theta distribution, magnetic field on:
 
 1. Setup the release
 ```
