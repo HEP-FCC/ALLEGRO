@@ -1,5 +1,58 @@
-# Recipes to update Endcap sampling fractions
+# ECAL barrel
 
+## Per-layer sampling fractions
+
+### Recipe
+
+Average per-layer sampling fractions used in ALLEGRO o1_v03 and o2_v01 as of July 2026 have been calculated as follows, using a simulated sample (10k events) of electrons, 20 GeV, flat theta distribution, magnetic field on:
+
+1. Setup the release
+```
+mkdir samplingfractions
+cd samplingfractions
+git clone ssh://git@gitlab.cern.ch:7999/gmarchio/FCC-scripts.git
+source FCC-scripts/bootstrap.sh
+```
+
+2. Modify the code
+
+Edit the file `samplingfractions/run/run_all_chain.sh`, and set
+```
+doSamplingFractions=1
+```
+
+Set the other doXXX flags to 0
+
+3. Run the code
+
+Start from a fresh shell, go to the samplingfractions folder and execute
+```
+source env.sh
+cd run
+./run_all_chain.sh
+```
+
+The sampling fractions are saved in the file `sampling/SF.json` of the output directory.
+This directory also contains plots of the gaussian fits used to determine the average value of the SF, as well as the root files produced by the simulations.
+
+### How the code works
+
+- the xml file of of the ECAL barrel used for the simulation (and reconstruction) is replaced with an xml file in which also the passive material is made active.
+- the simulated files are reconstructed with the reconstruction script `FCC-scripts/fcc_ee_samplingFraction_inclinedEcal.py` that schedules the algorithm SamplingFractionInLayers to fill histograms of the active and total energy deposited in each layer and the sampling fraction.
+- the histograms in the ROOT files are then fit to determine the average value with the script `FCC-scripts/FCC_calo_analysis_cpp/plot_samplingFraction.py`
+
+### Notes
+
+1. If you want to look at SFs vs E (10-20-50-100 GeV) or theta (E=10 GeV, theta = 50-60-70-80-90 degrees) do
+```
+doStudySFvsETheta=1
+```
+
+2. the script runs the jobs in parallel on multiple cores, the number of cores to be used can be modified in `run/runParallel.py` (variable `nCores`)
+
+
+
+# ECAL endcap
 
 There are two different approaches available for the endcap, one based on a direct assessment of the sampling fraction of each cell, and one based on an empirical determination of the calibration constant for each cell.
 
