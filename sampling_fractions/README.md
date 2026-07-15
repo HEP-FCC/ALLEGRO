@@ -6,15 +6,15 @@ Average per-layer sampling fractions have been calculated as follows, using a si
 
 1. Setup the release
 ```
-mkdir sampling
-cd sampling
+mkdir samplingfractions
+cd samplingfractions
 git clone ssh://git@gitlab.cern.ch:7999/gmarchio/FCC-scripts.git
 source FCC-scripts/bootstrap.sh
 ```
 
 2. Modify the code
 
-Edit the file `sampling/run/run_all_chain.sh`, and set
+Edit the file `samplingfractions/run/run_all_chain.sh`, and set
 ```
 doSamplingFractions=1
 ```
@@ -23,7 +23,7 @@ Set the other doXXX flags to 0
 
 3. Run the code
 
-Start from a fresh shell, go to the sampling folder
+Start from a fresh shell, go to the samplingfractions folder and execute
 ```
 source env.sh
 cd run
