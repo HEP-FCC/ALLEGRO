@@ -44,7 +44,7 @@ if [ ! -f $refFile ]; then
     echo "Failed to download reference file"
     exit -1
 fi
-python $ALLEGRO/utils/compareMaps.py neighbours neighbours_map_ecalB_ecalE_hcalB_hcalE.root $refFile  --debugevts 5 || exit 1
+$ALLEGRO/install/bin/compareMaps neighbours $refFile neighbours_map_ecalB_ecalE_hcalB_hcalE.root --debug-events 5 -m 1 || exit 1
 rm $refFile
 
 echo

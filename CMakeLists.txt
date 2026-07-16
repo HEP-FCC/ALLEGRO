@@ -30,7 +30,7 @@ set(PACKAGE_VERSION "${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}.${PACKAGE
 
 # dependencies are declared like this
 find_package(Gaudi)
-find_package(ROOT COMPONENTS RIO Tree)
+find_package(ROOT REQUIRED COMPONENTS RIO Tree Core)
 find_package(EDM4HEP)
 find_package(k4FWCore)
 
@@ -47,3 +47,12 @@ endif()
 
 
 include(cmake/CreateProjectConfig.cmake)
+
+# add executable for maps comparison
+gaudi_add_executable(compareMaps
+    SOURCES utils/compareMaps.cpp
+    LINK ROOT::Tree ROOT::RIO ROOT::Core
+)
+
+# add the "utils" directory to the include path for this target
+target_include_directories(compareMaps PRIVATE utils)
