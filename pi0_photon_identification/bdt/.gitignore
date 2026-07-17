@@ -1,0 +1,6 @@
+models/
+plots/
+*.root
+venv/
+*~
+*.json
