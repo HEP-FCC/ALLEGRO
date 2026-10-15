@@ -4,6 +4,8 @@
 
 ### Recipe
 
+For a quick example of the code to calculate the sampling fractions, have a look at the dedicated CI test in [`test/ctest_ECalBarrel_samplingfractions.sh`](https://github.com/HEP-FCC/ALLEGRO/blob/main/test/ctest_ECalBarrel_samplingfractions.sh)
+
 Average per-layer sampling fractions used in ALLEGRO o1_v03 and o2_v01 as of July 2026 have been calculated as follows, using a simulated sample (10k events) of electrons, 20 GeV, flat theta distribution, magnetic field on:
 
 1. Setup the release
@@ -133,6 +135,3 @@ The result will be a file `turbineEcalEndcap_samplingFractionsAnalytic.txt` that
 define Etrue 40.0
 ```
 Also, since this procedure operates under the assumption that all of the energy was deposited in the endcap, it does not give appropriate calibrations for the cells at the outer edge of the endcap that are "shadowed" by the barrel.  It is much better to use the direct sampling fraction approach for multi-subsystem studies that include that region.
-
-
-
