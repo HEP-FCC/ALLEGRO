@@ -23,7 +23,7 @@ DDSIM_CMD=(
 ddsim
 --outputFile "ALLEGRO_sf_sim.root"
 --compactFile "${K4GEO}/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DectEmptyMaster.xml" "${K4GEO}/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ECalBarrel_thetamodulemerged_calibration.xml"
---steeringFile "${FCCCONFIG}/FCCee/FullSim/ALLEGRO/ALLEGRO_o1_v03/SteeringFile_ALLEGRO_o1_v03.py"
+--steeringFile "${FCCCONFIG}/FullSim/ALLEGRO/ALLEGRO_o1_v03/SteeringFile_ALLEGRO_o1_v03.py"
 --numberOfEvents "${NEVENTS}"
 --random.enableEventSeed
 --random.seed 42
