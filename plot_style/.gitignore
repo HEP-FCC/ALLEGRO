@@ -1,0 +1,28 @@
+# Images written by the tests (regenerated on every run)
+tests/output/
+
+# Example plots when the examples are run with outdir "."
+mpl_*.png
+mpl_*.pdf
+root_*.png
+root_*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# ROOT: files produced when compiling macros with ACLiC (.L AllegroStyle.C+)
+*_C.so
+*_C.d
+*_C_ACLiC_dict_rdict.pcm
+AutoDict_*
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
