@@ -1,0 +1,9 @@
+FCC-config/
+k4geo/
+temp/
+out/
+dataset-prod/data/
+__pycache__/
+converted/
+condor_std/
+lightning-logs/
