@@ -1,5 +1,6 @@
 """matplotlib adapter: use(), points(i), line(i), fill(i), label(ax), info(ax, ...), legend(ax), colorbar(m, ax)."""
 import glob
+import logging
 import os
 import shutil
 import subprocess
@@ -15,9 +16,16 @@ from . import series as _series
 
 ROOT_TEXT_SCALE = 0.93376068  # ROOT renders TTF text at this fraction of the nominal size (TTF.cxx kScale)
 ROOT_DASH_SCALE = 0.25        # ROOT's PNG output draws SetLineStyleString lengths at 1/4 (measured)
+ROOT_TITLE_FACTOR_X = 1.111   # matplotlib axis-title distance per unit of ROOT title offset x title size
+ROOT_TITLE_FACTOR_Y = 1.6625  # (measured; ROOT uses about 1.6 for the y axis)
 LEGEND_SYMBOL = 0.75          # TLegend symbols span 75% of the symbol column width and of the row height
 
 _AUTO_LOCATOR_INIT = ticker.AutoLocator.__init__
+
+# matplotlib >= 3.11 logs this for every sqrt drawn with a custom math font, although the
+# symbol is rendered correctly; hide just this message.
+logging.getLogger("matplotlib.mathtext").addFilter(
+    lambda record: "__radicalbig__" not in record.getMessage())
 
 
 def _register_root_fonts():
@@ -151,10 +159,13 @@ def place_titles(ax, cfg=None):
     (matplotlib otherwise pushes them out when the tick labels get wider)."""
     cfg = cfg or load_config()
     a, c = cfg["axes"], cfg["canvas"]
-    inch = c["height_px"] / c["dpi"]
-    shift = lambda dx, dy: ax.transAxes + mpl.transforms.ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans)
-    ax.yaxis.set_label_coords(0, 1, transform=shift(-a["mpl_title_distance_y"] * inch, 0))
-    ax.xaxis.set_label_coords(1, 0, transform=shift(0, -a["mpl_title_distance_x"] * inch))
+    # distance = ROOT title offset x title size x factor, the factors measured against ROOT
+    size_in = cfg["text"]["axis_title_size"] * c["height_px"] / c["dpi"]
+    dx = ROOT_TITLE_FACTOR_Y * a["title_offset_y"] * size_in
+    dy = ROOT_TITLE_FACTOR_X * a["title_offset_x"] * size_in
+    shift = lambda x, y: ax.transAxes + mpl.transforms.ScaledTranslation(x, y, ax.figure.dpi_scale_trans)
+    ax.yaxis.set_label_coords(0, 1, transform=shift(-dx, 0))
+    ax.xaxis.set_label_coords(1, 0, transform=shift(0, -dy))
 
 
 def label(ax, status=None, x=None, y=None, align=None, cfg=None):

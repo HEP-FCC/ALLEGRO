@@ -36,6 +36,7 @@ def test_style_applied(R):
     assert s.GetPadTopMargin() == pytest.approx(cfg["margins"]["top"])
     assert s.GetPadTickX() == 1 and s.GetPadTickY() == 1
     assert s.GetOptStat() == 0 and s.GetOptTitle() == 0
+    assert s.GetErrorX() == pytest.approx(0.5)  # "E" shows x errors, "E X0" hides them
     assert s.GetLabelFont("X") == cfg["font"]["root_regular"]
     assert s.GetTitleSize("Y") == pytest.approx(cfg["text"]["axis_title_size"])
 
@@ -49,6 +50,9 @@ def test_colours_and_markers(R):
     R.AllegroPoints(h, 1)
     assert h.GetMarkerStyle() == cfg["markers"]["root"][1]
     assert h.GetLineColor() == h.GetMarkerColor() == R.AllegroColor(1)
+    g = R.TGraphErrors(2)  # graphs get the same error-bar width as histograms
+    R.AllegroPoints(g, 0)
+    assert g.GetLineWidth() == cfg["lines"]["width_px"]
 
 
 def test_label_info_legend_positions(R):
@@ -57,12 +61,14 @@ def test_label_info_legend_positions(R):
     lab = R.AllegroLabel()
     m = cfg["margins"]
     assert lab.GetX() == pytest.approx(m["left"] + cfg["label"]["x"] * (1 - m["left"] - m["right"]))
-    assert lab.GetTitle() == "#bf{#it{ALLEGRO}} Simulation"
+    assert lab.GetTitle() == f'#bf{{#it{{{cfg["label"]["experiment"]}}}}} {cfg["label"]["status"]}'
     R.AllegroInfo("A\nB", 91.2, 10.8)
     texts = [o for o in c.GetListOfPrimitives() if o.ClassName() == "TLatex"]
-    assert [t.GetTitle() for t in texts[1:]] == ["A", "B", "#sqrt{#it{s}} = 91.2 GeV, 10.8 ab#kern[-0.5]{^{#minus1}}"]
+    units = cfg["info"]["energy_unit"], cfg["info"]["lumi_unit_root"]
+    assert [t.GetTitle() for t in texts[1:]] == ["A", "B", "#sqrt{#it{s}} = 91.2 %s, 10.8 %s" % units]
     leg = R.AllegroLegend(3)
-    assert leg.GetX2() == pytest.approx(m["left"] + cfg["legend"]["x"] * (1 - m["left"] - m["right"]))
+    edge = leg.GetX2() if cfg["legend"]["align"] == "right" else leg.GetX1()
+    assert edge == pytest.approx(m["left"] + cfg["legend"]["x"] * (1 - m["left"] - m["right"]))
     assert leg.GetY2() - leg.GetY1() == pytest.approx(3 * cfg["legend"]["row_height"])
     left = R.AllegroLegend(2, 0.05, 0.5, "left")
     assert left.GetX1() == pytest.approx(m["left"] + 0.05 * (1 - m["left"] - m["right"]))

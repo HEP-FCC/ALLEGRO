@@ -18,10 +18,7 @@
   "font": {
     "family": "TeX Gyre Heros",
     "fallbacks": ["Nimbus Sans", "Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"],
-    "root_regular": 42,
-    "root_italic": 52,
-    "root_bold": 62,
-    "root_bold_italic": 72
+    "root_regular": 42
   },
 
   "text": {
@@ -41,10 +38,8 @@
     "frame_width_px": 1,
     "x_title_loc": "right",
     "y_title_loc": "top",
-    "root_title_offset_x": 0.98,
-    "root_title_offset_y": 1.33,
-    "mpl_title_distance_x": 0.049,
-    "mpl_title_distance_y": 0.0995
+    "title_offset_x": 0.98,
+    "title_offset_y": 1.33
   },
 
   "lines": {

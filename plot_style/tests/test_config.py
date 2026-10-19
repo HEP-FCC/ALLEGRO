@@ -90,9 +90,7 @@ def test_colormap_stops(cfg):
 
 def test_root_fonts_are_precision_2(cfg):
     # precision 2 => text size is a fraction of the pad height, as everywhere in the config
-    f = cfg["font"]
-    for key in ["root_regular", "root_italic", "root_bold", "root_bold_italic"]:
-        assert f[key] % 10 == 2
+    assert cfg["font"]["root_regular"] % 10 == 2
 
 
 def test_series_cycles(cfg):

@@ -29,7 +29,8 @@ def test_sizes_follow_config(styled):
     cfg = allegro_style.load_config()
     assert mpl.rcParams["axes.labelsize"] == pytest.approx(amp._font(cfg, cfg["text"]["axis_title_size"]))
     assert mpl.rcParams["figure.subplot.top"] == pytest.approx(1 - cfg["margins"]["top"])
-    assert tuple(mpl.rcParams["figure.figsize"]) == (8, 6)
+    c = cfg["canvas"]
+    assert tuple(mpl.rcParams["figure.figsize"]) == (c["width_px"] / c["dpi"], c["height_px"] / c["dpi"])
 
 
 def test_ticks_everywhere(styled):
@@ -59,7 +60,8 @@ def test_label_default_above_frame(styled):
     exp, status = amp.label(ax)
     fig.canvas.draw()
     frame = _bbox(ax)
-    assert exp.get_text() == "ALLEGRO" and status.get_text() == "Simulation"
+    lab = allegro_style.load_config()["label"]
+    assert exp.get_text() == lab["experiment"] and status.get_text() == lab["status"]
     assert _bbox(exp).x0 == pytest.approx(frame.x0, abs=1)
     assert _bbox(exp).x1 < _bbox(status).x0
     baseline = fig.transFigure.transform(exp.get_position())[1]
@@ -101,7 +103,7 @@ def test_info_partial_and_multiline(styled):
     assert amp.info(ax) == []
 
 
-def test_legend_top_right_and_movable(styled):
+def test_legend_position_and_movable(styled):
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], label="a", **amp.points(0))
     leg = amp.legend(ax)
@@ -112,7 +114,8 @@ def test_legend_top_right_and_movable(styled):
     # like TLegend: top at y, text starts after the symbol column of a box of fixed width
     assert b.y1 == pytest.approx(frame.y0 + cfg["y"] * frame.height, abs=1)
     text_x0 = _bbox(leg.get_texts()[0]).x0
-    assert text_x0 == pytest.approx(frame.x0 + (cfg["x"] - cfg["width"]) * frame.width + column, abs=2)
+    left = cfg["x"] - (cfg["width"] if cfg["align"] == "right" else 0)
+    assert text_x0 == pytest.approx(frame.x0 + left * frame.width + column, abs=2)
     leg = amp.legend(ax, x=0.05, y=0.5, align="left")
     fig.canvas.draw()
     assert _bbox(leg.get_texts()[0]).x0 == pytest.approx(frame.x0 + 0.05 * frame.width + column, abs=2)

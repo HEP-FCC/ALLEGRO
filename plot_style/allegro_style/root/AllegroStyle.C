@@ -77,8 +77,8 @@ inline void SetAllegroStyle()
    s->SetLabelSize(text_axis_label_size, "XYZ");
    s->SetTitleSize(text_axis_title_size, "XYZ");
    s->SetLegendTextSize(text_legend_size);
-   s->SetTitleXOffset(axes_root_title_offset_x);
-   s->SetTitleYOffset(axes_root_title_offset_y);
+   s->SetTitleXOffset(axes_title_offset_x);
+   s->SetTitleYOffset(axes_title_offset_y);
 
    s->SetTickLength(axes_tick_length, "XYZ");
    s->SetNdivisions(axes_minor_ticks ? axes_ndivisions : axes_ndivisions % 100, "XYZ");
@@ -91,7 +91,7 @@ inline void SetAllegroStyle()
    s->SetMarkerStyle(markers_root[0]);
    s->SetMarkerSize(lines_marker_size_px / 8.); // ROOT marker size 1 = 8 px
    s->SetEndErrorSize(0);
-   s->SetErrorX(0);
+   s->SetErrorX(0.5); // histogram x errors = half bin width: "E" draws them, "E X0" hides them
    for (int k = 0; k < line_styles_root_n; ++k)
       if (*line_styles_dashes_root[k])
          s->SetLineStyleString(line_styles_root[k], line_styles_dashes_root[k]);
@@ -129,8 +129,10 @@ inline int AllegroLineStyle(int i) { return AllegroCfg::line_styles_root[i % All
 inline void AllegroPoints(TObject *o, int i, int marker = -1)
 {
    int c = AllegroColor(i);
-   if (auto l = dynamic_cast<TAttLine *>(o))
-      l->SetLineColor(c); // error bars
+   if (auto l = dynamic_cast<TAttLine *>(o)) { // error bars
+      l->SetLineColor(c);
+      l->SetLineWidth(AllegroCfg::lines_width_px);
+   }
    if (auto m = dynamic_cast<TAttMarker *>(o)) {
       m->SetMarkerColor(c);
       m->SetMarkerStyle(AllegroMarker(marker < 0 ? i : marker));

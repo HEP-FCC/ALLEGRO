@@ -15,9 +15,6 @@ const char* const font_family = "TeX Gyre Heros";
 const char* const font_fallbacks[] = {"Nimbus Sans", "Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"};
 const int font_fallbacks_n = 5;
 const int font_root_regular = 42;
-const int font_root_italic = 52;
-const int font_root_bold = 62;
-const int font_root_bold_italic = 72;
 const double text_axis_title_size = 0.045;
 const double text_axis_label_size = 0.04;
 const double text_legend_size = 0.035;
@@ -31,10 +28,8 @@ const int axes_ndivisions = 510;
 const int axes_frame_width_px = 1;
 const char* const axes_x_title_loc = "right";
 const char* const axes_y_title_loc = "top";
-const double axes_root_title_offset_x = 0.98;
-const double axes_root_title_offset_y = 1.33;
-const double axes_mpl_title_distance_x = 0.049;
-const double axes_mpl_title_distance_y = 0.0995;
+const double axes_title_offset_x = 0.98;
+const double axes_title_offset_y = 1.33;
 const int lines_width_px = 2;
 const int lines_marker_size_px = 9;
 const char* const palette_name = "ALLEGRO";
@@ -54,7 +49,8 @@ const int line_styles_root_n = 4;
 const char* const line_styles_dashes_root[] = {"", "40 24", "8 16", "40 16 8 16"};
 const int line_styles_dashes_root_n = 4;
 const char* const colormap_name = "viridis";
-const char* const colormap_stops[] = {"#440154", "#472d7b", "#3b528b", "#2c728e", "#21918c", "#28ae80", "#5ec962", "#addc30", "#fde725"};
+const char* const colormap_stops[] = {"#440154", "#472d7b", "#3b528b", "#2c728e", "#21918c",
+                                      "#28ae80", "#5ec962", "#addc30", "#fde725"};
 const int colormap_stops_n = 9;
 const char* const label_experiment = "ALLEGRO";
 const char* const label_status = "Simulation";
@@ -75,5 +71,5 @@ const char* const legend_align = "right";
 const double legend_width = 0.3;
 const double legend_row_height = 0.05;
 const double legend_margin = 0.25;
-}
+} // namespace AllegroCfg
 #endif
