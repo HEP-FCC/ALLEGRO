@@ -473,3 +473,6 @@ The tests run every example with both libraries and check that the matplotlib an
 plots coincide. The plots are written to `tests/output/`. There,
 `compare_<plot>_overlay.png` shows both on top of each other: red is ink only in ROOT,
 blue only in matplotlib, grey in both.
+
+
+*This documentation was in part generated with AI and reviewed by a human.*
