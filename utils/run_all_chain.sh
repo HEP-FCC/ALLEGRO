@@ -33,24 +33,24 @@ doNeighbourMaps=0
 # calculate sampling fractions
 doSamplingFractions=0
 # study SF vs E, theta
-doStudySFvsETheta=1
+doStudySFvsETheta=0
 # create map of cell noise for topoclustering and noise tools
 # note: needs sampling fractions
-doNoiseMaps=1
+doNoiseMaps=0
 # calculate up/downstream corrections
-doUpDownStreamCorrections=1
+doUpDownStreamCorrections=0
 # generate events with up/downstream corrections applied to study resolution post-correction
 # doClustersWithUpDownStreamCorrections=0
 # produce electron and photon samples for training the MVA energy calibration
-doClustersForMVATraining=1
+doClustersForMVATraining=0
 # run the energy MVA calibration with XGBoost
 # currently broken (problems with RDataFrame)
 # use LGBM training instead (in ALLEGRO/mva_cluster_calibrations, see README there)
-doMVATraining=1
+doMVATraining=0
 # produce electron and photon samples for testing the MVA energy calibration
-doClustersForMVAEvaluation=1
+doClustersForMVAEvaluation=0
 # produce clusters adding also output of MVA calibration and photonID tool
-doClustersWithCalibrations=1
+doClustersWithCalibrations=0
 
 
 
@@ -197,11 +197,13 @@ if (( $doNeighbourMaps > 0 )); then
     mv neighbours_map_ecalB_ecalE.root $runname/data
     mv neighbours_map_ecalB.root $runname/data
     mv neighbours_map_ecalE.root $runname/data
-    ln -s neighbours_map_ecalB.root $runname/data/neighbours_map_ecalB_thetamodulemerged.root
-    ln -s neighbours_map_ecalE.root $runname/data/neighbours_map_ecalE_turbine.root
+    # names expected by the reconstruction (FCC-config)
+    ln -sf neighbours_map_ecalB.root $runname/data/neighbours_map_ecalB_thetamodulemerged.root
+    ln -sf neighbours_map_ecalE.root $runname/data/neighbours_map_ecalE_turbine.root
     echo "Creating the ecal+hcal neighbour map"
     exec_cmd "k4run ../ALLEGRO/neighbor_maps/neighbours.py --detector $xmldir/$xmlfileFullDet.xml --ecalb --hcalb --ecalec --hcalec --link-calos --link-ecal --link-hcal" "$runname/log/createNeighboursEcalHcal.log"
     mv neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/data
+    ln -sf neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/data/neighbours_map_ecalB_thetamodulemerged_ecalE_turbine_hcalB_hcalEndcap_phitheta.root
 fi
 
 
@@ -265,8 +267,16 @@ if (( $doNoiseMaps > 0 )); then
     echo "Creating the ecal+hcal noise map..."
     exec_cmd "k4run ../../../ALLEGRO/noise_maps/noise_map.py --detector $xmldir/$xmlfileFullDet.xml --subdetectors ecalb ecale hcalb hcale" "../../log/createNoiseMap.log" "append"
 
+    # names expected by the reconstruction (FCC-config): the ECAL barrel and endcap topo-clustering
+    # can both use the combined ECAL map, since the noise tool indexes the cells by cellID
+    ln -sf cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged_ecalE_ECalEndcapTurbine.root cellNoise_map_electronicsNoiseLevel_ecalB_thetamodulemerged.root
+    ln -sf cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged_ecalE_ECalEndcapTurbine.root cellNoise_map_endcapTurbine_electronicsNoiseLevel.root
+    # electronics noise per cell, needed with --addNoise
+    ln -sf noise_capa_ecalbarrel/elecNoise_ecalBarrelFCCee_theta.root elecNoise_ecalBarrelFCCee_theta.root
+    ln -sf noise_capa_ecalendcap/elecNoise_ecalendcap.root elecNoise_ecalendcap.root
+
     echo "Noise maps created. To compare to a previous map to check if they are identical or not, you can use the compareMaps script"
-    cd ../..
+    cd $rundir
 fi
 
 
@@ -362,7 +372,7 @@ if (( $doClustersForMVAEvaluation > 0 )); then
     # without updated SFs and up/downstream corrections
     # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma e- --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters" "$runname/log/createClustersForEvaluation.log"
     # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 135000 180000 --clusters" "$runname/log/createClustersForEvaluation_highE.log"
-    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --thetas 20" "$runname/log/createClustersForEvaluationEndcap.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters" "$runname/log/createClustersForEvaluation.log"
     # large production, for evaluation of angular resolution, theta in 40-140 degrees
     # sim + reco
     # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_for_angle --nEvt 50000 --particles gamma --energies 300 500 1000 5000 10000 20000 30000 50000 75000 100000 --thetaMinMax 40 140 --clusters" "$runname/log/createClustersForAngularResolution.log"

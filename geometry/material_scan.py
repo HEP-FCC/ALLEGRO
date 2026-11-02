@@ -27,8 +27,11 @@ ecalbarrelXML = "FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/" + opts.ecalbarrelXML
 path_to_detectors = os.environ.get("K4GEO", "")
 geoservice = GeoSvc("GeoSvc")
 if trackeronly:
+    # the placeholder (a small vacuum box at the origin, see the xml file) allows to load the vertex detector and to
+    # scan it correctly without the beam pipe
     detcards = [
         'FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DectEmptyMaster.xml',
+        os.path.join(os.environ.get("ALLEGRO") or os.path.abspath("../ALLEGRO"), "geometry", "IdPlaceholder.xml"),
         'FCCee/IDEA/compact/IDEA_o1_v04/VertexComplete_o1_v04.xml',
         'FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DriftChamber_o1_v02.xml',
         'FCCee/IDEA/compact/IDEA_o1_v04/SiliconWrapper_o1_v02.xml',
@@ -42,7 +45,7 @@ elif ecalonly:
 else:
     detcards = ['FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml']
 geoservice.detectors = [
-    os.path.join(path_to_detectors, detcard) for detcard in detcards
+    os.path.join(path_to_detectors, detcard) for detcard in detcards  # absolute paths are kept as they are
 ]
 geoservice.OutputLevel = INFO
 ApplicationMgr().ExtSvc += [geoservice]

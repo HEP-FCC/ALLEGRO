@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Placeholder used by material_scan.py to scan the tracker without the beam pipe:
+  - some passive elements of the IDEA vertex detector (Kapton_on_beampipe, VertexDisks_support) have a
+    (dummy) readout and the same id=-1. DD4hep refuses to add a sub-detector if the first one (in
+    alphabetical order) with the same id has a readout, so a sub-detector with id=-1 and no readout
+    has to come first alphabetically
+  - the material scan starts from the origin: if this is directly in the world volume, the TGeo
+    navigation misses the vertex detector for z>0, so a small vacuum box is placed around the origin
+-->
+<lccdd>
+  <detectors>
+    <detector name="AAA_IdPlaceholder" id="-1" type="DD4hep_BoxSegment" vis="InvisibleNoDaughters">
+      <material name="Vacuum"/>
+      <box x="0.5*mm" y="0.5*mm" z="0.5*mm"/>
+      <position x="0" y="0" z="0"/>
+    </detector>
+  </detectors>
+</lccdd>
