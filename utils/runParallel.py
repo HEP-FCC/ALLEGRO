@@ -91,6 +91,34 @@ def ddsimThreadsArg():
 def nParallelJobs(issim):
     return nCores // nThreads if issim else nCores
 
+# official ALLEGRO reconstruction in FCC-config: the steering file of each detector version imports
+# the configuration common to all versions from ../ALLEGRO_common/run_digi_reco_common.py
+detectorVersion = "o1_v03"
+fccConfigAllegroDir = os.path.join(os.environ.get("FCCCONFIG", "../FCC-config/FCCee"), "FullSim", "ALLEGRO")
+
+# copy the official reconstruction scripts to outdir, keeping their relative location, so that the
+# calibration constants can be changed for this production without modifying FCC-config.
+# Returns the steering file to be run with k4run
+def recoSteeringFile(outdir):
+    return os.path.join(outdir, "reco_scripts", f"ALLEGRO_{detectorVersion}", "run_digi_reco.py")
+
+def prepareRecoScripts(outdir, sampling_fracs=None, corrections=None):
+    steering = recoSteeringFile(outdir)
+    common = os.path.join(outdir, "reco_scripts", "ALLEGRO_common", "run_digi_reco_common.py")
+    executeCmd(f"mkdir -p {os.path.dirname(steering)} {os.path.dirname(common)}")
+    executeCmd(f"cp -f {fccConfigAllegroDir}/ALLEGRO_{detectorVersion}/run_digi_reco.py {steering}")
+    executeCmd(f"cp -f {fccConfigAllegroDir}/ALLEGRO_common/run_digi_reco_common.py {common}")
+    # the constants are set inside a function: change only their assignment, keeping the indentation
+    if sampling_fracs:
+        sampling_str = ', '.join([str(s) for s in sampling_fracs])
+        executeCmd(f"sed -i 's/^\\(\\s*\\)ecalBarrelSamplingFraction = .*/\\1ecalBarrelSamplingFraction = [{sampling_str}]/' {common}")
+    if corrections:
+        upstream_str = ', '.join([str(s) for s in corrections['up']])
+        downstream_str = ', '.join([str(s) for s in corrections['do']])
+        executeCmd(f"sed -i 's/^\\(\\s*\\)ecalBarrelUpstreamParameters = .*/\\1ecalBarrelUpstreamParameters = [[{upstream_str}]]/' {common}")
+        executeCmd(f"sed -i 's/^\\(\\s*\\)ecalBarrelDownstreamParameters = .*/\\1ecalBarrelDownstreamParameters = [[{downstream_str}]]/' {common}")
+    return steering
+
 # run the (single-threaded) k4run reconstruction of the nevt events of a job that ran a
 # multi-threaded ddsim: the events are split in nThreads consecutive blocks reconstructed
 # in parallel, so that all the cores reserved for the job are used.
@@ -237,7 +265,7 @@ class SimulationJobProcessor(JobProcessor):
 class ReconstructionJobProcessor(JobProcessor):
 
     def __init__(self, outdir, siminput, nevts, sampling_fracs=None, corrections=None):
-        script = "%s/digi_reco.py" % outdir
+        script = recoSteeringFile(outdir)
         output_tag = "reconstruction"
         self.siminput = siminput
         super().__init__(script, outdir, output_tag, nevts)
@@ -251,28 +279,11 @@ class ReconstructionJobProcessor(JobProcessor):
         print(f"WARNING: will use reconstruction files from folder {outdir}/../data")
         self.extra_args += f" --dataFolder {outdir}/../data/"
 
-    # before launching reconstruction, needs to preprocess steering file
+    # before launching reconstruction, copy the official reconstruction scripts and set the calibration constants
+    # (saveHits and saveCells are command-line options of the reconstruction, passed via extraRecoArgs)
     def preprocess(self):
-        cmd = f"cp -f run_ALLEGRO_reco.py {self.script}"
-        executeCmd(cmd)
-
-        if self.sampling_fracs:
-            sampling_str = ', '.join([str(s) for s in self.sampling_fracs])
-            cmd = f"sed -i 's/ecalBarrelSamplingFraction =.*/ecalBarrelSamplingFraction = [{sampling_str}]/' {self.script}"
-            executeCmd(cmd)
-
-        if self.corrections:
-            upstream_str = ', '.join([str(s) for s in self.corrections['up']])
-            downstream_str = ', '.join([str(s) for s in self.corrections['do']])
-            cmd = f"sed -i 's/ecalBarrelUpstreamParameters =.*/ecalBarrelUpstreamParameters = [[{upstream_str}]]/' {self.script}"
-            executeCmd(cmd)
-            cmd = f"sed -i 's/ecalBarrelDownstreamParameters =.*/ecalBarrelDownstreamParameters = [[{downstream_str}]]/' {self.script}"
-            executeCmd(cmd)
-
-        cmd = f"sed -i 's/saveHits *=.*/saveHits = False/' {self.script}"
-        executeCmd(cmd)
-        cmd = f"sed -i 's/saveCells *=.*/saveCells = False/' {self.script}"
-        return executeCmd(cmd)
+        prepareRecoScripts(self.outdir, self.sampling_fracs, self.corrections)
+        return 0
 
     def process(self, nevt, skipevt, energy, theta, particle, jobId):
         if theta>0:
@@ -636,7 +647,7 @@ class ReconstructionProductionJobProcessor(ProductionJobProcessor):
 
     def __init__(self, outdir, siminput, nevts, sampling_fracs=None, corrections=None):
         output_tag = "production_reconstruction"
-        script = "%s/digi_reco.py" % outdir
+        script = recoSteeringFile(outdir)
         super().__init__(script, outdir, output_tag, nevts)
         self.outdir = outdir
         self.siminput = siminput
@@ -650,39 +661,18 @@ class ReconstructionProductionJobProcessor(ProductionJobProcessor):
         print(f"WARNING: will use reconstruction files from folder {outdir}/../data")
         self.extra_args += f" --dataFolder {outdir}/../data/"
 
-    # before launching reconstruction, needs to preprocess steering file
+    # before launching reconstruction, copy the official reconstruction scripts and set the calibration constants
+    # (saveHits and saveCells are command-line options of the reconstruction, False by default, that can be set via extraRecoArgs)
     def preprocess(self):
-        cmd = "cp -f run_ALLEGRO_reco.py %s/digi_reco.py" % self.outdir
-        executeCmd(cmd)
-
-        if self.sampling_fracs:
-            sampling_str = ', '.join([str(s) for s in self.sampling_fracs])
-            cmd = f"sed -i 's/ecalBarrelSamplingFraction =.*/ecalBarrelSamplingFraction = [[{sampling_str}]]/' {self.script}"
-            executeCmd(cmd)
-
-        if self.corrections:
-            upstream_str = ', '.join([str(s) for s in self.corrections['up']])
-            downstream_str = ', '.join([str(s) for s in self.corrections['do']])
-            cmd = f"sed -i 's/ecalBarrelUpstreamParameters =.*/ecalBarrelUpstreamParameters = [[{upstream_str}]]/' {self.script}"
-            executeCmd(cmd)
-            cmd = f"sed -i 's/ecalBarrelDownstreamParameters =.*/ecalBarrelDownstreamParameters = [[{downstream_str}]]/' {self.script}"
-            executeCmd(cmd)
-
-        # by default do not save hits and cells, unless requested via extraRecoArgs
-        if '--saveHits' not in extraRecoArgs:
-            cmd = f"sed -i 's/saveHits *=.*/saveHits = False/' {self.script}"
-            executeCmd(cmd)
-        if '--saveCells' not in extraRecoArgs:
-            cmd = f"sed -i 's/saveCells *=.*/saveCells = False/' {self.script}"
-            executeCmd(cmd)
+        prepareRecoScripts(self.outdir, self.sampling_fracs, self.corrections)
 
     # process: run k4run
     def process(self, nevt, skipevt, particle, jobId):
-        cmd = f"k4run {self.outdir}/digi_reco.py --IOSvc.FirstEventEntry {skipevt} -n {nevt} --IOSvc.Output {self.outdir}/root/{self.output_tag}_particle_{particle}_jobid_{jobId}.root  --IOSvc.Input {self.siminput}/production_simulation_particle_{particle}.root {self.extra_args} &> {self.outdir}/log/{self.output_tag}_particle_{particle}_jobid_{jobId}.log"
+        cmd = f"k4run {self.script} --IOSvc.FirstEventEntry {skipevt} -n {nevt} --IOSvc.Output {self.outdir}/root/{self.output_tag}_particle_{particle}_jobid_{jobId}.root  --IOSvc.Input {self.siminput}/production_simulation_particle_{particle}.root {self.extra_args} &> {self.outdir}/log/{self.output_tag}_particle_{particle}_jobid_{jobId}.log"
         return executeCmd(cmd)
 
     def processNInputFiles(self, nInputFiles, skipInputFiles, particle, jobId):
-        cmd = f"k4run {self.outdir}/digi_reco.py --IOSvc.Output {self.outdir}/root/{self.output_tag}_particle_{particle}_jobid_{jobId}.root  --IOSvc.Input"
+        cmd = f"k4run {self.script} --IOSvc.Output {self.outdir}/root/{self.output_tag}_particle_{particle}_jobid_{jobId}.root  --IOSvc.Input"
         file_pattern = os.path.join(f"{self.siminput}/root/", f"production_simulation_particle_{particle}_jobid_*.root")
         #print(file_pattern)
         matching_files = glob.glob(file_pattern)

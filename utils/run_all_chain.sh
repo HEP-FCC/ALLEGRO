@@ -9,7 +9,8 @@
 #
 # Note: if the geometry is standard, some steps might not be needed, and the default files for e.g. noise, neighbours, ... could be used
 
-runname="paper_LArPb"
+# runname="paper_LArPb"
+runname="test"
 xmlbasedir="${K4GEO:-../k4geo}"
 xmldir=FCCee/ALLEGRO/compact/ALLEGRO_o1_v03
 xmlfileFullDet=ALLEGRO_o1_v03
@@ -19,7 +20,7 @@ today=`date +%y%m%d`
 
 # number of threads of each ddsim job launched by runParallel.py (must be a divisor of nCores
 # in runParallel.py): the ddsim jobs are run nCores/nThreads at a time, with nThreads threads each
-nThreads=1
+nThreads=8
 
 # create GDML for event display
 doGDML=0
@@ -32,26 +33,24 @@ doNeighbourMaps=0
 # calculate sampling fractions
 doSamplingFractions=0
 # study SF vs E, theta
-doStudySFvsETheta=0
+doStudySFvsETheta=1
 # create map of cell noise for topoclustering and noise tools
 # note: needs sampling fractions
-doNoiseMaps=0
+doNoiseMaps=1
 # calculate up/downstream corrections
-doUpDownStreamCorrections=0
+doUpDownStreamCorrections=1
 # generate events with up/downstream corrections applied to study resolution post-correction
 # doClustersWithUpDownStreamCorrections=0
 # produce electron and photon samples for training the MVA energy calibration
-doClustersForMVATraining=0
+doClustersForMVATraining=1
 # run the energy MVA calibration with XGBoost
 # currently broken (problems with RDataFrame)
 # use LGBM training instead (in ALLEGRO/mva_cluster_calibrations, see README there)
-doMVATraining=0
+doMVATraining=1
 # produce electron and photon samples for testing the MVA energy calibration
-doClustersForMVAEvaluation=0
-# calculate resolutions
-doComputeResolutions=0
+doClustersForMVAEvaluation=1
 # produce clusters adding also output of MVA calibration and photonID tool
-doClustersWithCalibrations=0
+doClustersWithCalibrations=1
 
 
 
@@ -59,6 +58,9 @@ doSimulation=0
 doReconstruction=0
 doProductionSim=0
 doProductionReco=0
+
+# folder from which the chain is run: the steps that change folder come back here
+rundir=$PWD
 
 mkdir -p log plots
 mkdir -p $runname/log
@@ -95,7 +97,7 @@ exec_cmd() {
 #
 if (( $doGDML > 0 )); then
     echo "Creating the GDML file of the detector..."
-    exec_cmd "ddsim --numberOfEvents 0 --enableGun --compactFile $K4GEO/$xmldir/$xmlfileFullDet.xml --geometry.dumpGDML $xmlfileFullDet.gdml --runType run" "$runname/log/createGDML.log"
+    exec_cmd "ddsim --numberOfEvents 0 --enableGun --compactFile $K4GEO/$xmldir/$xmlfileFullDet.xml --geometry.dumpGDML $runname/$xmlfileFullDet.gdml --runType run" "$runname/log/createGDML.log"
 fi
 
 
@@ -199,7 +201,7 @@ if (( $doNeighbourMaps > 0 )); then
     ln -s neighbours_map_ecalE.root $runname/data/neighbours_map_ecalE_turbine.root
     echo "Creating the ecal+hcal neighbour map"
     exec_cmd "k4run ../ALLEGRO/neighbor_maps/neighbours.py --detector $xmldir/$xmlfileFullDet.xml --ecalb --hcalb --ecalec --hcalec --link-calos --link-ecal --link-hcal" "$runname/log/createNeighboursEcalHcal.log"
-    mv neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/neighbours
+    mv neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/data
 fi
 
 
@@ -230,7 +232,7 @@ if (( $doStudySFvsETheta > 0 )); then
     exec_cmd "python plot_samplingFraction.py ../../../run/$runname/sampling/calibration_sampling_output_energy_?_theta_90.0_particle_e-.root 10 20 50 100 -r 10000 20000 50000 100000 --totalNumLayers 11 --preview -outputfolder plots_sampling_fraction_$today --plotSFvsEnergy --noFits" "../../../run/$runname/log/samplingVsE.log" "append"
     exec_cmd "python plot_samplingFraction.py ../../../run/$runname/sampling/calibration_sampling_output_energy_10000_theta_?_particle_e-.root 50 60 70 80 90 -r 50.0 60.0 70.0 80.0 90.0 --totalNumLayers 11 --preview -outputfolder plots_sampling_fraction_$today --plotSFvsEnergy --theta --noFits" "../../../run/$runname/log/samplingVsTheta.log" "append"
     echo "Plots of sampling fractions are produced in ../ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plots_sampling_fraction_$today"
-    exec_cmd "cd .." /dev/null
+    exec_cmd "cd $rundir" /dev/null
 fi
 
 
@@ -393,21 +395,6 @@ fi
 if (( $doClustersWithCalibrations > 0)); then
     python -u runParallel.py -j $nThreads --outDir $runname/clusters_smallSWcluster --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --simInput $runname/clusters --calibrateClusters --runPhotonID
 fi
-
-# Compute resolutions and responses of the clusters produced in the previous step, also applying the MVA calibrations
-if (( $doComputeResolutions > 0 )); then
-    python compute_resolutions.py --inputDir $runname/clusters --outFile $runname/results.csv --clusters CaloClusters CorrectedCaloClusters CaloTopoClusters CorrectedCaloTopoClusters --MVAcalibCalo $runname/training_calo.json --MVAcalibTopo $runname/training_topo.json
-
-    # Make resolution plots
-    # - for each energy point estimate the responses and resolutions
-    python plot_resolutions.py --outDir $runname --doFits plot $runname/results.csv --all
-    # - compare the resolutions among different cluster collections and calibrations
-    # 1. showing also raw clusters and clusters with up/downstream corrections
-    python plot_resolutions.py --outDir $runname --doFits compare clusters CaloClusters CorrectedCaloClusters CaloTopoClusters CorrectedCaloTopoClusters CalibratedCaloClusters CalibratedCaloTopoClusters $runname/results.csv --all
-    # 2. showing only the calibrated clusters
-    python plot_resolutions.py --outDir $runname --doFits compare clusters CalibratedCaloClusters CalibratedCaloTopoClusters $runname/results.csv --all
-fi
-
 
 # Generic simulation and reconstruction jobs
 if (( $doSimulation > 0 )); then

@@ -42,9 +42,14 @@ for item in data['corr_params']:
 upstream_params_str = up_a + ", " + up_b + ", " + up_c + ", " + up_d + ", " + up_e + ", " + up_f
 downstream_params_str = down_a + ", " + down_b + ", " + down_c + ", " + down_d + ", " + down_e + ", " + down_f
 
-cmd = "sed -i --follow-symlinks 's/ecalBarrelUpstreamParameters *=.*/ecalBarrelUpstreamParameters = [[%s]]/' run_ALLEGRO_reco.py" % upstream_params_str
+# update the official ALLEGRO reconstruction in FCC-config
+# (the constants are set inside a function: change only their assignment, keeping the indentation)
+recoCommonScript = "$FCCCONFIG/FullSim/ALLEGRO/ALLEGRO_common/run_digi_reco_common.py"
+cmd = "sed -i 's/^\\(\\s*\\)ecalBarrelUpstreamParameters = .*/\\1ecalBarrelUpstreamParameters = [[%s]]/' %s" % (upstream_params_str, recoCommonScript)
 print(cmd)
-os.system(cmd)
-cmd = "sed -i --follow-symlinks 's/ecalBarrelDownstreamParameters *=.*/ecalBarrelDownstreamParameters = [[%s]]/' run_ALLEGRO_reco.py" % downstream_params_str
+if os.system(cmd) != 0:
+    print("WARNING: could not update the upstream parameters in", recoCommonScript)
+cmd = "sed -i 's/^\\(\\s*\\)ecalBarrelDownstreamParameters = .*/\\1ecalBarrelDownstreamParameters = [[%s]]/' %s" % (downstream_params_str, recoCommonScript)
 print(cmd)
-os.system(cmd)
+if os.system(cmd) != 0:
+    print("WARNING: could not update the downstream parameters in", recoCommonScript)

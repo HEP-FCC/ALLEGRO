@@ -283,10 +283,12 @@ for ifile, filename in enumerate(calo_init.filenamesIn):
     print(string_for_fccsw)
 
 if calo_init.args.sed:
-    command = "sed -i --follow-symlinks 's/ecalBarrelSamplingFraction *=.*/ecalBarrelSamplingFraction = %s/' " % string_for_fccsw
-    # it has to be launched from FCCSW_ecal folder
-    command = command + " run_ALLEGRO_reco.py"
-    os.system(command)
+    # update the official ALLEGRO reconstruction in FCC-config
+    # (the constant is set inside a function: change only its assignment, keeping the indentation)
+    recoCommonScript = "$FCCCONFIG/FullSim/ALLEGRO/ALLEGRO_common/run_digi_reco_common.py"
+    command = "sed -i 's/^\\(\\s*\\)ecalBarrelSamplingFraction = .*/\\1ecalBarrelSamplingFraction = %s/' %s" % (string_for_fccsw, recoCommonScript)
+    if os.system(command) != 0:
+        print("WARNING: could not update the sampling fractions in", recoCommonScript)
     os.system("sed -i 's/ecalBarrelSamplingFractions *=.*/ecalBarrelSamplingFractions = %s/' ../FCC-scripts/fcc_ee_upstream_inclinedEcal.py" %
               string_for_fccsw)  # it has to be launched from run folder
     os.system("sed -i 's/SFfcc *=.*/SFfcc = %s/' ../FCC-scripts/create_noise_file*heta* ../LAr_scripts/caloNtupleAnalyzer/energy_vs_depth_wrt_noise.py" %
