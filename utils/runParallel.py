@@ -11,14 +11,19 @@ import argparse
 import json
 from math import radians, log10, ceil
 import glob
+import sys
 import ROOT
 
-# try to solve disk issues by randomizing order of job submission to avoid many short jobs finishing at the same time
+# try to solve disk issues by randomizing order of job submission
+# to avoid many short jobs finishing at the same time
 import random
 
-# base name of xml file for ECal barrel - should be the same in ALLEGRO_o1_v03.xml and in run_all_chain.sh
+# base name of xml file for ECal barrel - should be the same
+# in ALLEGRO_o1_v03.xml and in run_all_chain.sh
 xmlfileECal="ECalBarrel_thetamodulemerged"
+# xmlfileECal="ECalBarrel_thetamodulemerged_LKrW"
 
+# do a dry run (just print the commands) if debug is False, otherwise submit the jobs
 debug = False
 
 # set this to True if you want the values of the sampling and upstream corrections
@@ -41,18 +46,73 @@ if initialSeed != 0:
 
 saveRawHitInfo = False    # save or not G4 hit info (E/time/position)
 
+# number of cores of the local machine
 nCores = 64
 
-extraRecoArgs = ""
+# number of threads of each ddsim job (must be a divisor of nCores). The jobs running
+# ddsim are launched nCores/nThreads at a time, the reconstruction-only jobs nCores at a time
+nThreads = 1
+
+# save cells for cell-based algorithms
+extraRecoArgs = "--saveCells"
+# extraRecoArgs = ""
 
 # thetaMin, thetaMax in case a flat theta spectrum is desired (set downstream)
 thetaMin = None
 thetaMax = None
 
+# Energy intervals of the simulation production (MeV): the jobs cycle over
+# [energyBins[i], energyBins[i+1]], to populate the low energies better than
+# a single uniform interval. None = the default 100 MeV - 105 GeV.
+energyBins = None
+
+# Simulation production with a different vertex in every event: each job
+# writes its own HepMC3 file with generate_displaced_photons.py (seed =
+# job seed, energy interval of the job) and ddsim reads it instead of using
+# the particle gun. The string holds extra options for the generator,
+# separated by commas so that the command line has no spaces or quotes
+# (e.g. "--mode=surface,--lambdaMax=65"); None = particle gun.
+hepmcGunArgs = None
+hepmcGenerator = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'generate_displaced_photons.py')
+
+# PDG codes of the particle names, for the HepMC3 generator
+pdgCodes = {'gamma': 22, 'e-': 11, 'e+': -11, 'mu-': 13, 'mu+': -13, 'pi0': 111, 'pi+': 211, 'pi-': -211}
+
 def executeCmd(cmd):
     print("Running", cmd)
     if not debug:
         return subprocess.run([cmd], shell=True)
+
+# extra ddsim argument to run it multi-threaded (Geant4 then also voxelises the geometry in parallel)
+def ddsimThreadsArg():
+    return f" --numberOfThreads {nThreads}" if nThreads > 1 else ""
+
+# number of jobs to run in parallel
+def nParallelJobs(issim):
+    return nCores // nThreads if issim else nCores
+
+# run the (single-threaded) k4run reconstruction of the nevt events of a job that ran a
+# multi-threaded ddsim: the events are split in nThreads consecutive blocks reconstructed
+# in parallel, so that all the cores reserved for the job are used.
+# makeCmd(n, firstEventArg, suffix) returns the k4run command for a block of n events,
+# suffix must be inserted in the names of its output and log files
+def executeK4runInBlocks(makeCmd, nevt):
+    nBlocks = min(nThreads, nevt)
+    if nBlocks <= 1:
+        return executeCmd(makeCmd(nevt, "", ""))
+    cmds = []
+    for i in range(nBlocks):
+        first = i * nevt // nBlocks
+        n = (i + 1) * nevt // nBlocks - first
+        cmds.append(makeCmd(n, f" --IOSvc.FirstEventEntry {first}", f"_chunk{i}"))
+    for cmd in cmds:
+        print("Running", cmd)
+    if debug:
+        return None
+    procs = [subprocess.Popen([cmd], shell=True) for cmd in cmds]
+    retcodes = [p.wait() for p in procs]
+    # report the first failure, if any
+    return subprocess.CompletedProcess(cmds, next((r for r in retcodes if r != 0), 0))
 
 def appendToFile(filename, text):
     with open(filename, "a") as file:
@@ -107,7 +167,7 @@ class JobProcessor:
 
         print("Checking output file")
         filestub = f"{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}"
-        result = subprocess.run(["../ALLEGRO/util/checkFile.sh", f"{self.outdir}/{filestub}.root", f"{self.nevts}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(["../ALLEGRO/utils/checkFile.sh", f"{self.outdir}/{filestub}.root", f"{self.nevts}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output = result.stdout.splitlines()[0]
         print(output)
         if output=="OK":
@@ -156,7 +216,7 @@ class SimulationJobProcessor(JobProcessor):
                 print(f"unmerged sim file already produced: {self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}.root")
                 return True
         #
-        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energy}*MeV --gun.momentumMax {energy}*MeV --gun.thetaMin {thetaMinRad} --gun.thetaMax {thetaMaxRad} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}.root --random.enableEventSeed --random.seed {seed} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}.log"
+        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energy}*MeV --gun.momentumMax {energy}*MeV --gun.thetaMin {thetaMinRad} --gun.thetaMax {thetaMaxRad} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}.root --random.enableEventSeed --random.seed {seed}{ddsimThreadsArg()} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}.log"
         return executeCmd(cmd)
 
     # not sure we need to explicitly implement this?
@@ -270,16 +330,17 @@ class SamplingJobProcessor(JobProcessor):
             thetaMin = radians(self.thetaMin)
             thetaMax = radians(self.thetaMax)
             thetaStr = f"thetaMinMax_{thetaMin:.1f}_{thetaMax:.1f}"
-        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energy}*MeV --gun.momentumMax {energy}*MeV --gun.thetaMin {thetaMin} --gun.thetaMax {thetaMax} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_sim.root --random.enableEventSeed --random.seed {jobId} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DectEmptyMaster.xml $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/{xmlfileECal}_calibration.xml {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_sim.log"
+        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energy}*MeV --gun.momentumMax {energy}*MeV --gun.thetaMin {thetaMin} --gun.thetaMax {thetaMax} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_sim.root --random.enableEventSeed --random.seed {jobId}{ddsimThreadsArg()} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DectEmptyMaster.xml $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/{xmlfileECal}_calibration.xml {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_sim.log"
         result = executeCmd(cmd)
         if result.returncode != 0:
             return result
 
         # then, run the reconstruction
         jobinput = f"{self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_sim.root"
-        joboutput = f"{self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_rec.root"
-        cmd = f"""k4run {self.script} -n {nevt} --hists.energyAxis {energy/1000} --IOSvc.Input {jobinput} --Output.THistSvc "rec DATAFILE='{self.outdir}/root/calibration_{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}.root' TYP='ROOT' OPT='RECREATE'" --IOSvc.Output {joboutput} {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}_rec.log"""
-        return executeCmd(cmd)
+        def makeCmd(n, firstEventArg, suffix):
+            joboutput = f"{self.outdir}/root/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}{suffix}_rec.root"
+            return f"""k4run {self.script} -n {n}{firstEventArg} --hists.energyAxis {energy/1000} --IOSvc.Input {jobinput} --Output.THistSvc "rec DATAFILE='{self.outdir}/root/calibration_{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}{suffix}.root' TYP='ROOT' OPT='RECREATE'" --IOSvc.Output {joboutput} {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_{thetaStr}_particle_{particle}_jobid_{jobId}{suffix}_rec.log"""
+        return executeK4runInBlocks(makeCmd, nevt)
 
     def hadd(self, energy, theta, particle):
         if theta>0:
@@ -380,7 +441,7 @@ class UpstreamJobProcessor(JobProcessor):
         else:
             thetaMin = radians(85.)
             thetaMax = radians(95.)
-        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energy}*MeV --gun.momentumMax {energy}*MeV --gun.thetaMin {thetaMin} --gun.thetaMax {thetaMax} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_sim.root --random.enableEventSeed --random.seed {jobId} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DectEmptyMaster.xml $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/{xmlfileECal}_upstream.xml &> {self.outdir}/log/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_sim.log"
+        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energy}*MeV --gun.momentumMax {energy}*MeV --gun.thetaMin {thetaMin} --gun.thetaMax {thetaMax} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_sim.root --random.enableEventSeed --random.seed {jobId}{ddsimThreadsArg()} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/DectEmptyMaster.xml $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/{xmlfileECal}_upstream.xml &> {self.outdir}/log/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_sim.log"
         result = executeCmd(cmd)
         if result.returncode != 0:
             print(result)
@@ -388,8 +449,9 @@ class UpstreamJobProcessor(JobProcessor):
         #    return result
 
         # then, run the reconstruction
-        cmd = f"k4run {self.script} -n {nevt} --IOSvc.Input {self.outdir}/root/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_sim.root --IOSvc.Output {self.outdir}/root/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_rec.root {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_rec.log"
-        return executeCmd(cmd)
+        def makeCmd(n, firstEventArg, suffix):
+            return f"k4run {self.script} -n {n}{firstEventArg} --IOSvc.Input {self.outdir}/root/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}_sim.root --IOSvc.Output {self.outdir}/root/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}{suffix}_rec.root {self.extra_args} &> {self.outdir}/log/{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}_jobid_{jobId}{suffix}_rec.log"
+        return executeK4runInBlocks(makeCmd, nevt)
 
     def hadd(self, energy, theta, particle):
         filestub = f"{self.output_tag}_energy_{energy}_theta_{theta}_particle_{particle}"
@@ -479,7 +541,7 @@ class ProductionJobProcessor():
 
     def rm(self, particle):
         print("Checking output file")
-        result = subprocess.run(["../ALLEGRO/util/checkFile.sh", f"{self.outdir}/{self.output_tag}_particle_{particle}.root", f"{self.nevts}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(["../ALLEGRO/utils/checkFile.sh", f"{self.outdir}/{self.output_tag}_particle_{particle}.root", f"{self.nevts}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output = result.stdout.splitlines()[0]
         print(output)
         # in that case delete the subjob output
@@ -520,10 +582,12 @@ class SimulationProductionJobProcessor(ProductionJobProcessor):
         # thetamin = radians(5.)
         # thetamax = radians(40.)
         # do not use hardcoded value, rather take them from command line
-        thetamin = radians(thetaMin)
-        thetamax = radians(thetaMax)
+        # (only for the particle gun: with --hepmcGun the generator sets the directions)
         energymin = 100
         energymax = 105000
+        if energyBins is not None:
+            ibin = (jobId - 1) % (len(energyBins) - 1)
+            energymin, energymax = energyBins[ibin], energyBins[ibin + 1]
         # energymax = 22000
         # energymin = 105000
         # energymax = 200000
@@ -534,7 +598,22 @@ class SimulationProductionJobProcessor(ProductionJobProcessor):
         # first, create the steering file
         executeCmd(f"mkdir -p {self.outdir}/python")
         steeringScript = f"{self.outdir}/python/{self.output_tag}_particle_{particle}_jobid_{jobId}_steersim.py"
-        cmd = f"ddsim --enableGun --gun.distribution uniform --gun.momentumMin {energymin}*MeV --gun.momentumMax {energymax}*MeV --gun.thetaMin {thetamin} --gun.thetaMax {thetamax} --gun.particle {particle} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_particle_{particle}_jobid_{jobId}.root --random.enableEventSeed --random.seed {seed} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml {self.extra_args} --dumpSteeringFile > {steeringScript}"
+        if hepmcGunArgs is not None:
+            # per-event vertices: generate the events of this job in a HepMC3 file
+            executeCmd(f"mkdir -p {self.outdir}/hepmc")
+            hepmcFile = f"{self.outdir}/hepmc/{self.output_tag}_particle_{particle}_jobid_{jobId}.hepmc3"
+            ret = executeCmd(f"{sys.executable} {hepmcGenerator} -n {nevt} -o {hepmcFile} --seed {seed} --pdg {pdgCodes[particle]} "
+                             f"--energyMin {energymin/1000.} --energyMax {energymax/1000.} {hepmcGunArgs.replace(',', ' ')} "
+                             f"&> {self.outdir}/log/{self.output_tag}_particle_{particle}_jobid_{jobId}_hepmc.log")
+            if ret is not None and ret.returncode != 0:
+                print(f"HepMC3 generation failed for job {jobId}")
+                return ret
+            gunArgs = f"--inputFiles {hepmcFile}"
+        else:
+            thetamin = radians(thetaMin)
+            thetamax = radians(thetaMax)
+            gunArgs = f"--enableGun --gun.distribution uniform --gun.momentumMin {energymin}*MeV --gun.momentumMax {energymax}*MeV --gun.thetaMin {thetamin} --gun.thetaMax {thetamax} --gun.particle {particle}"
+        cmd = f"ddsim {gunArgs} --numberOfEvents {nevt} --outputFile {self.outdir}/root/{self.output_tag}_particle_{particle}_jobid_{jobId}.root --random.enableEventSeed --random.seed {seed}{ddsimThreadsArg()} --compactFile $K4GEO/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ALLEGRO_o1_v03.xml {self.extra_args} --dumpSteeringFile > {steeringScript}"
         executeCmd(cmd)
 
         # hack steering file if we need to drop some collection
@@ -589,10 +668,13 @@ class ReconstructionProductionJobProcessor(ProductionJobProcessor):
             cmd = f"sed -i 's/ecalBarrelDownstreamParameters =.*/ecalBarrelDownstreamParameters = [[{downstream_str}]]/' {self.script}"
             executeCmd(cmd)
 
-        cmd = f"sed -i 's/saveHits *=.*/saveHits = False/' {self.script}"
-        executeCmd(cmd)
-        cmd = f"sed -i 's/saveCells *=.*/saveCells = False/' {self.script}"
-        executeCmd(cmd)
+        # by default do not save hits and cells, unless requested via extraRecoArgs
+        if '--saveHits' not in extraRecoArgs:
+            cmd = f"sed -i 's/saveHits *=.*/saveHits = False/' {self.script}"
+            executeCmd(cmd)
+        if '--saveCells' not in extraRecoArgs:
+            cmd = f"sed -i 's/saveCells *=.*/saveCells = False/' {self.script}"
+            executeCmd(cmd)
 
     # process: run k4run
     def process(self, nevt, skipevt, particle, jobId):
@@ -614,7 +696,7 @@ class ReconstructionProductionJobProcessor(ProductionJobProcessor):
         # check that reconstruction file is OK
         # would be good to check nevents too
         print("Checking output file")
-        result = subprocess.run(["../ALLEGRO/util/checkFile.sh", f"{self.outdir}/{self.output_tag}_particle_{particle}.root", f"{self.nevts}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(["../ALLEGRO/utils/checkFile.sh", f"{self.outdir}/{self.output_tag}_particle_{particle}.root", f"{self.nevts}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output = result.stdout.splitlines()[0]
         print(output)
         # in that case delete the subjob output
@@ -632,12 +714,14 @@ def run_the_jobs(jobProcessor, particles, energies, thetas, nEvt, do_preprocess,
         print("Doing preprocessing")
         jobProcessor.preprocess()
 
-    print("nCores = ", nCores)
-    with mp.Pool(processes=nCores) as p:
+    print("nCores = ", nCores, ", nThreads per ddsim job = ", nThreads)
+    with mp.Pool(processes=nParallelJobs(issim)) as p:
         print("Pool size =", p._processes)
         # simu is much slower than reconstruction so there are more jobs needed; also, simu at high E with many more hits is much slower
         if issim:
             nEvtMaxPerJob = [int(210 * (10000. / e)**1.2) for e in energies]  # 210 evts for 10 GeV, with power scaling (so that on 96 cores I can do 20k evts in one go)
+            # multi-threaded jobs are nThreads times faster: give them nThreads times more events
+            nEvtMaxPerJob = [n * nThreads for n in nEvtMaxPerJob]
         else:
             # nEvtMaxPerJob = [int(3600-1500*log10(e/1000.)) for e in energies]  # 2100 evts for 10 GeV, with log E scaling (on 96 cores => > 200k events at 10 GeV). 600 evts/job at 100 GeV, 3600 at 1 GeV
             nEvtMaxPerJob = [500 for e in energies]  # reco jobs are similar in speed no matter the energy
@@ -692,8 +776,8 @@ def run_production(jobProcessor, particles, nEvt, nEvtMaxPerJob, do_preprocess, 
         print("Doing preprocessing")
         jobProcessor.preprocess()
 
-    print("nCores = ", nCores)
-    with mp.Pool(processes=nCores) as p:
+    print("nCores = ", nCores, ", nThreads per ddsim job = ", nThreads)
+    with mp.Pool(processes=nParallelJobs(issim)) as p:
         print("Pool size =", p._processes)
         args = []
         jobId = 1
@@ -744,9 +828,15 @@ def run_production(jobProcessor, particles, nEvt, nEvtMaxPerJob, do_preprocess, 
 
 
 def main():
+    global nThreads
+    # the jobs read module-level settings changed below (thetaMin, energyBins, hepmcGunArgs, ...):
+    # they must be forked, not re-imported (default since Python 3.14 on Linux is forkserver)
+    mp.set_start_method('fork')
     parser = argparse.ArgumentParser()
     parser.add_argument('--outDir', default='./', type=str, help='output directory for plots')
     parser.add_argument('--nEvt', default=1000, type=int, help='number of events to process per point')
+    parser.add_argument('-j', '--threads', default=nThreads, type=int,
+                        help=f'number of threads of each ddsim job, must be a divisor of nCores={nCores}: the ddsim jobs are run nCores/threads at a time (default={nThreads})')
     parser.add_argument('--energies', default=[], action='extend', nargs='*', type=int, help='energies to process')
     theta_group = parser.add_mutually_exclusive_group()
     theta_group.add_argument('--thetas', default=None, action='extend', nargs='*', type=int, help='thetas (in degrees) to process. If not supplied, will use 90 degrees')
@@ -765,6 +855,13 @@ def main():
     parser.add_argument('--calibrateClusters', action='store_true', help='apply MVA calibration to clusters', default=False)
     parser.add_argument('--runPhotonID', action='store_true', help='run photon ID algorithm', default=False)
     parser.add_argument('--reconstructPi0s', action='store_true', help='reconstruct resolved pi0 candidates', default=False)
+
+    parser.add_argument('--energyBins', default=None, nargs='+', type=float, help='simprod: energy interval edges (MeV), the jobs cycle over the intervals')
+    parser.add_argument('--maxEventsPerJob', default=None, type=int, help='simprod: maximum number of events per job')
+    parser.add_argument('--hepmcGun', default=None, type=str, nargs='?', const='',
+                        help='simprod: instead of the particle gun, generate per job a HepMC3 file with a different vertex in every event '
+                             '(generate_displaced_photons.py); optional value: extra generator options separated by commas, '
+                             'e.g. --hepmcGun=--mode=surface,--lambdaMax=65')
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--sim', action='store_true', help='run the generation/simulation with ddsim')
@@ -794,6 +891,22 @@ def main():
         extraRecoArgs += " --reconstructPi0s true"
     else:
         extraRecoArgs += " --reconstructPi0s false"
+
+    if args.threads < 1 or nCores % args.threads != 0:
+        parser.error(f'--threads must be a divisor of nCores={nCores}')
+    nThreads = args.threads
+
+    global energyBins, hepmcGunArgs
+    energyBins = args.energyBins
+    hepmcGunArgs = args.hepmcGun
+    if hepmcGunArgs is not None:
+        if not args.simprod:
+            parser.error('--hepmcGun is only implemented for --simprod')
+        unknown = [p for p in args.particles if p not in pdgCodes]
+        if unknown:
+            parser.error(f'--hepmcGun: no PDG code for {unknown}')
+    if energyBins is not None and len(energyBins) < 2:
+        parser.error('--energyBins needs at least two edges')
 
     thetas = None
     global thetaMin, thetaMax
@@ -867,7 +980,10 @@ def main():
         run_the_jobs(recoJobPr, particles, energies, thetas, args.nEvt, recoJobPr.dopreprocess, args.process, recoJobPr.dopostprocess, recoJobPr.isSim)
     elif args.simprod:
         simProdJobPr = SimulationProductionJobProcessor(args.outDir, args.nEvt)
-        run_production(simProdJobPr, particles, args.nEvt, min(2000, ceil(args.nEvt*len(particles)/nCores)), simProdJobPr.dopreprocess, args.process, simProdJobPr.isSim)
+        nEvtMaxPerJob = min(2000 * nThreads, ceil(args.nEvt*len(particles)/nParallelJobs(simProdJobPr.isSim)))
+        if args.maxEventsPerJob is not None:
+            nEvtMaxPerJob = min(nEvtMaxPerJob, args.maxEventsPerJob)
+        run_production(simProdJobPr, particles, args.nEvt, nEvtMaxPerJob, simProdJobPr.dopreprocess, args.process, simProdJobPr.isSim)
     elif args.recprod:
         recProdJobPr = ReconstructionProductionJobProcessor(args.outDir, args.simInput, args.nEvt, sampling_fracs=sampling_fracs, corrections=corrections)
         if args.inputFilesPerJob>0:
