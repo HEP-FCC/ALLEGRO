@@ -288,7 +288,7 @@ echo "FCCCONFIG: $FCCCONFIG"
 if (( GEN )); then
     cp "$CARD_SOURCE" card.cmd
     echo "Running generation from $CARD_SOURCE"
-    echo "Random:seed=${SEED}" >> card.cmd
+    printf '\nRandom:seed=%s\n' "${SEED}" >> card.cmd
 
     k4run "${HOMEDIR}/dataset-prod/utils/pythia.py" \
         -n "$EVENTS" \
