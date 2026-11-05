@@ -9,13 +9,18 @@
 #
 # Note: if the geometry is standard, some steps might not be needed, and the default files for e.g. noise, neighbours, ... could be used
 
-runname="paper_LArPb"
+# runname="paper_LArPb"
+runname="test"
 xmlbasedir="${K4GEO:-../k4geo}"
 xmldir=FCCee/ALLEGRO/compact/ALLEGRO_o1_v03
 xmlfileFullDet=ALLEGRO_o1_v03
 # base name of xml file for ECal barrel - should be the same in ALLEGRO_o1_v03.xml and in runParallel.py
 xmlfileECal=ECalBarrel_thetamodulemerged
 today=`date +%y%m%d`
+
+# number of threads of each ddsim job launched by runParallel.py (must be a divisor of nCores
+# in runParallel.py): the ddsim jobs are run nCores/nThreads at a time, with nThreads threads each
+nThreads=8
 
 # create GDML for event display
 doGDML=0
@@ -44,8 +49,6 @@ doClustersForMVATraining=0
 doMVATraining=0
 # produce electron and photon samples for testing the MVA energy calibration
 doClustersForMVAEvaluation=0
-# calculate resolutions
-doComputeResolutions=0
 # produce clusters adding also output of MVA calibration and photonID tool
 doClustersWithCalibrations=0
 
@@ -55,6 +58,9 @@ doSimulation=0
 doReconstruction=0
 doProductionSim=0
 doProductionReco=0
+
+# folder from which the chain is run: the steps that change folder come back here
+rundir=$PWD
 
 mkdir -p log plots
 mkdir -p $runname/log
@@ -91,7 +97,7 @@ exec_cmd() {
 #
 if (( $doGDML > 0 )); then
     echo "Creating the GDML file of the detector..."
-    exec_cmd "ddsim --numberOfEvents 0 --enableGun --compactFile $K4GEO/$xmldir/$xmlfileFullDet.xml --geometry.dumpGDML $xmlfileFullDet.gdml --runType run" "$runname/log/createGDML.log"
+    exec_cmd "ddsim --numberOfEvents 0 --enableGun --compactFile $K4GEO/$xmldir/$xmlfileFullDet.xml --geometry.dumpGDML $runname/$xmlfileFullDet.gdml --runType run" "$runname/log/createGDML.log"
 fi
 
 
@@ -191,11 +197,13 @@ if (( $doNeighbourMaps > 0 )); then
     mv neighbours_map_ecalB_ecalE.root $runname/data
     mv neighbours_map_ecalB.root $runname/data
     mv neighbours_map_ecalE.root $runname/data
-    ln -s neighbours_map_ecalB.root $runname/data/neighbours_map_ecalB_thetamodulemerged.root
-    ln -s neighbours_map_ecalE.root $runname/data/neighbours_map_ecalE_turbine.root
+    # names expected by the reconstruction (FCC-config)
+    ln -sf neighbours_map_ecalB.root $runname/data/neighbours_map_ecalB_thetamodulemerged.root
+    ln -sf neighbours_map_ecalE.root $runname/data/neighbours_map_ecalE_turbine.root
     echo "Creating the ecal+hcal neighbour map"
     exec_cmd "k4run ../ALLEGRO/neighbor_maps/neighbours.py --detector $xmldir/$xmlfileFullDet.xml --ecalb --hcalb --ecalec --hcalec --link-calos --link-ecal --link-hcal" "$runname/log/createNeighboursEcalHcal.log"
-    mv neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/neighbours
+    mv neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/data
+    ln -sf neighbours_map_ecalB_ecalE_hcalB_hcalE.root $runname/data/neighbours_map_ecalB_thetamodulemerged_ecalE_turbine_hcalB_hcalEndcap_phitheta.root
 fi
 
 
@@ -205,28 +213,28 @@ if (( $doSamplingFractions > 0 )); then
     echo "Computing sampling fractions"
     # - one energy is enough as they are independent of energy and direction
     # e-, 10 GeV, 90 degrees
-    # python runParallel.py --outDir $runname/sampling --nEvt 10000 --energies 10000 --particles e- --sampling
+    # python runParallel.py -j $nThreads --outDir $runname/sampling --nEvt 10000 --energies 10000 --particles e- --sampling
     # e-, 1-10-20-50 GeV, 90 degrees
-    # python runParallel.py --outDir $runname/sampling --nEvt 10000 --energies 1000 10000 20000 50000 --particles e- --sampling
+    # python runParallel.py -j $nThreads --outDir $runname/sampling --nEvt 10000 --energies 1000 10000 20000 50000 --particles e- --sampling
     # e-, 20 GeV, flat theta spectrum (DEFAULT)
-    exec_cmd "python -u runParallel.py --outDir $runname/sampling --nEvt 10000 --energies 20000 --thetas -1 --particles e- --sampling" "$runname/log/createSamplingCorrections.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/sampling --nEvt 10000 --energies 20000 --thetas -1 --particles e- --sampling" "$runname/log/createSamplingCorrections.log"
     # x-check Jiashun numbers:
-    # exec_cmd "python -u runParallel.py --outDir $runname/sampling --nEvt 10000 --energies 50000 --thetas -1 --particles gamma --sampling" "$runname/log/createSamplingCorrections.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/sampling --nEvt 10000 --energies 50000 --thetas -1 --particles gamma --sampling" "$runname/log/createSamplingCorrections.log"
     # gamma, 10 GeV, flat theta spectrum (to x-check particle dependence)
     # note that for low-energy photons the estimated sampling fraction in the first layers is lower than for electrons as the
     # shower starts later.
-    # python runParallel.py --outDir $runname/sampling_photon --nEvt 10000 --energies 10000 --thetas -1 --particles gamma --sampling
+    # python runParallel.py -j $nThreads --outDir $runname/sampling_photon --nEvt 10000 --energies 10000 --thetas -1 --particles gamma --sampling
 fi
 
 # - otherwise, to plot sampling fractions vs energy or direction and check directly this independence, one can do
 if (( $doStudySFvsETheta > 0 )); then
-    exec_cmd "python -u runParallel.py --outDir $runname/sampling --nEvt 2000 --energies 10000 20000 50000 100000 --sampling" "$runname/log/samplingVsE.log"
-    exec_cmd "python -u runParallel.py --outDir $runname/sampling --nEvt 2000 --energies 10000 --thetas 90 80 70 60 50 --sampling" "$runname/log/samplingVsTheta.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/sampling --nEvt 2000 --energies 10000 20000 50000 100000 --sampling" "$runname/log/samplingVsE.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/sampling --nEvt 2000 --energies 10000 --thetas 90 80 70 60 50 --sampling" "$runname/log/samplingVsTheta.log"
     exec_cmd "cd ../ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp" /dev/null
     exec_cmd "python plot_samplingFraction.py ../../../run/$runname/sampling/calibration_sampling_output_energy_?_theta_90.0_particle_e-.root 10 20 50 100 -r 10000 20000 50000 100000 --totalNumLayers 11 --preview -outputfolder plots_sampling_fraction_$today --plotSFvsEnergy --noFits" "../../../run/$runname/log/samplingVsE.log" "append"
     exec_cmd "python plot_samplingFraction.py ../../../run/$runname/sampling/calibration_sampling_output_energy_10000_theta_?_particle_e-.root 50 60 70 80 90 -r 50.0 60.0 70.0 80.0 90.0 --totalNumLayers 11 --preview -outputfolder plots_sampling_fraction_$today --plotSFvsEnergy --theta --noFits" "../../../run/$runname/log/samplingVsTheta.log" "append"
     echo "Plots of sampling fractions are produced in ../ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plots_sampling_fraction_$today"
-    exec_cmd "cd .." /dev/null
+    exec_cmd "cd $rundir" /dev/null
 fi
 
 
@@ -259,8 +267,16 @@ if (( $doNoiseMaps > 0 )); then
     echo "Creating the ecal+hcal noise map..."
     exec_cmd "k4run ../../../ALLEGRO/noise_maps/noise_map.py --detector $xmldir/$xmlfileFullDet.xml --subdetectors ecalb ecale hcalb hcale" "../../log/createNoiseMap.log" "append"
 
+    # names expected by the reconstruction (FCC-config): the ECAL barrel and endcap topo-clustering
+    # can both use the combined ECAL map, since the noise tool indexes the cells by cellID
+    ln -sf cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged_ecalE_ECalEndcapTurbine.root cellNoise_map_electronicsNoiseLevel_ecalB_thetamodulemerged.root
+    ln -sf cellNoise_map_electronicsNoiseLevel_ecalB_ECalBarrelModuleThetaMerged_ecalE_ECalEndcapTurbine.root cellNoise_map_endcapTurbine_electronicsNoiseLevel.root
+    # electronics noise per cell, needed with --addNoise
+    ln -sf noise_capa_ecalbarrel/elecNoise_ecalBarrelFCCee_theta.root elecNoise_ecalBarrelFCCee_theta.root
+    ln -sf noise_capa_ecalendcap/elecNoise_ecalendcap.root elecNoise_ecalendcap.root
+
     echo "Noise maps created. To compare to a previous map to check if they are identical or not, you can use the compareMaps script"
-    cd ../..
+    cd $rundir
 fi
 
 
@@ -276,14 +292,14 @@ if (( $doUpDownStreamCorrections > 0 )); then
     # The values of the parameters vs particle energy are then fitted to obtain
     # a parameterisation of the corrections vs energy
     # flat theta between 85 and 95 degrees
-    exec_cmd "python -u runParallel.py --outDir $runname/upstream --nEvt 5000 --energies 1000 5000 10000 15000 20000 30000 50000 75000 100000 --thetas -1 --particles e- --upstream --SF $runname/sampling/SF.json" "$runname/log/createUpDownStreamCorrections.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/upstream --nEvt 5000 --energies 1000 5000 10000 15000 20000 30000 50000 75000 100000 --thetas -1 --particles e- --upstream --SF $runname/sampling/SF.json" "$runname/log/createUpDownStreamCorrections.log"
 fi
 
 
 # Generate clusters for upstream studies (can use --clusters instead)
 #if (( $doClustersWithUpDownStreamCorrections > 0 )); then
 #    echo "Producing clusters with upstream/downstream corrections"
-#    exec_cmd "python -u runParallel.py --outDir $runname/upstreamProd --nEvt 1000000 --upstreamProd --SF $runname/sampling/SF.json" "log/createClustersWithUpDownStreamCorrections.log"
+#    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/upstreamProd --nEvt 1000000 --upstreamProd --SF $runname/sampling/SF.json" "log/createClustersWithUpDownStreamCorrections.log"
 #fi
 
 
@@ -293,42 +309,49 @@ if (( $doClustersForMVATraining > 0 )); then
     # (~1M/day on APC server)
 
     # first, generate and simulate events with ddsim
-    # python -u runParallel.py --outDir $runname/training_simulation --nEvt 300000 --particles gamma pi0 e- --simprod --thetaMinMax 40 140
-    # python -u runParallel.py --outDir $runname/training_simulation_lowE --nEvt 10000 --particles gamma pi0 e- --simprod --thetaMinMax 40 140
-    exec_cmd "python -u runParallel.py --outDir $runname/training_simulation_big2 --nEvt 300000 --particles gamma --simprod --thetaMinMax 40 140" "$runname/log/simulateEventsForMVATraining_big.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_simulation_small_highE --nEvt 10000 --particles gamma --simprod --thetaMinMax 40 140" "$runname/log/simulateEventsForMVATraining_small_highE.log"
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_simulation --nEvt 300000 --particles gamma pi0 e- --simprod --thetaMinMax 40 140
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_simulation_lowE --nEvt 10000 --particles gamma pi0 e- --simprod --thetaMinMax 40 140
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_simulation_big2 --nEvt 300000 --particles gamma --simprod --thetaMinMax 40 140" "$runname/log/simulateEventsForMVATraining_big.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_simulation_small_highE --nEvt 10000 --particles gamma --simprod --thetaMinMax 40 140" "$runname/log/simulateEventsForMVATraining_small_highE.log"
 
     # then, reconstruct them
     # - example to read SFs and corrections from external files
-    # python runParallel.py --outDir $runname/production --nEvt 300000 --production --SF $runname/sampling/SF.json --corrections $runname/upstream/corr_params_1d.json
+    # python runParallel.py -j $nThreads --outDir $runname/production --nEvt 300000 --production --SF $runname/sampling/SF.json --corrections $runname/upstream/corr_params_1d.json
 
     # - example where total number of events is given. Job will be splitted in many subjobs, each running over the merged root file, each reconstructing a given number of events
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction --nEvt 300000 --particles gamma pi0 e- --recprod --simInput $runname/training_simulation" "$runname/log/reconstructEventsForMVATraining.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction --nEvt 300000 --particles gamma pi0 e- --recprod --simInput $runname/training_simulation" "$runname/log/reconstructEventsForMVATraining.log"
     # small prod (10k)
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction_small --nEvt 10000 --particles gamma e- --recprod --simInput $runname/training_simulation_small" "$runname/log/reconstructEventsForMVATraining_small.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction_small_highE --nEvt 10000 --particles gamma --recprod --simInput $runname/training_simulation_small_highE" "$runname/log/reconstructEventsForMVATraining_small_highE.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction_big --nEvt 300000 --particles gamma --recprod --simInput $runname/training_simulation_big" "$runname/log/reconstructEventsForMVATraining_big.log"
-    exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction_big2 --nEvt 300000 --particles gamma --recprod --simInput $runname/training_simulation_big2" "$runname/log/reconstructEventsForMVATraining_big2.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_small --nEvt 10000 --particles gamma e- --recprod --simInput $runname/training_simulation_small" "$runname/log/reconstructEventsForMVATraining_small.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_small_highE --nEvt 10000 --particles gamma --recprod --simInput $runname/training_simulation_small_highE" "$runname/log/reconstructEventsForMVATraining_small_highE.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_big --nEvt 300000 --particles gamma --recprod --simInput $runname/training_simulation_big" "$runname/log/reconstructEventsForMVATraining_big.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_big2 --nEvt 300000 --particles gamma --recprod --simInput $runname/training_simulation_big2" "$runname/log/reconstructEventsForMVATraining_big2.log"
+
+    # training sample for a photon-direction NN, with a different start point and direction in every event:
+    # photons start in front of the ECAL cryostat (r = 2110 mm) with angles w.r.t. the radial direction uniform
+    # and independent of the position (generate_displaced_photons.py --mode surface, one HepMC3 file per job);
+    # energy log-uniform in 0.5-100 GeV. Generator options after --hepmcGun=, separated by commas.
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/direction_simulation --nEvt 100 --particles gamma --simprod --energyBins 500 100000 --hepmcGun=--mode=surface" "$runname/log/simulateDirection.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/direction_reconstruction --nEvt 100 --particles gamma --recprod --simInput $runname/direction_simulation" "$runname/log/reconstructDirection.log"
 
     # - example where the number of input files per job is given, in that case the jobs will run over the unmerged root files
-    # python -u runParallel.py --outDir $runname/training_reconstruction --inputFilesPerJob 5 --nEvt 300000 --particles gamma pi0 --recprod --simInput $runname/training_simulation
-    # python -u runParallel.py --outDir $runname/training_reconstruction --inputFilesPerJob 5 --nEvt 10000 --particles gamma e- --recprod --simInput $runname/training_simulation
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction --inputFilesPerJob 5 --nEvt 300000 --particles gamma pi0 --recprod --simInput $runname/training_simulation
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction --inputFilesPerJob 5 --nEvt 10000 --particles gamma e- --recprod --simInput $runname/training_simulation
 
-    # python -u runParallel.py --outDir $runname/training_reconstruction_smallSWclusters_noise_xtalk --nEvt 300000 --inputFilesPerJob 2 --particles gamma --recprod --simInput $runname/training_simulation --addNoise --addCrosstalk
-    # python -u runParallel.py --outDir $runname/training_reconstruction_smallSWclusters_lowE_noise_xtalk --nEvt 10000 --particles gamma --recprod --simInput $runname/training_simulation_lowE --addNoise --addCrosstalk
-    # python -u runParallel.py --outDir $runname/training_reconstruction_smallSWclusters_highE_noise_xtalk --nEvt 15000 --particles gamma --recprod --simInput $runname/training_simulation_highE --addNoise --addCrosstalk
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_smallSWclusters_noise_xtalk --nEvt 300000 --inputFilesPerJob 2 --particles gamma --recprod --simInput $runname/training_simulation --addNoise --addCrosstalk
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_smallSWclusters_lowE_noise_xtalk --nEvt 10000 --particles gamma --recprod --simInput $runname/training_simulation_lowE --addNoise --addCrosstalk
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_smallSWclusters_highE_noise_xtalk --nEvt 15000 --particles gamma --recprod --simInput $runname/training_simulation_highE --addNoise --addCrosstalk
 
     # - reconstruct low-E sample
-    # python -u runParallel.py --outDir $runname/training_reconstruction_lowE --nEvt 10000 --particles gamma pi0 e- --recprod --simInput $runname/training_simulation_lowE
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_lowE --nEvt 10000 --particles gamma pi0 e- --recprod --simInput $runname/training_simulation_lowE
     # produce clusters with noise
-    # python -u runParallel.py --outDir $runname/training_reconstruction_withnoise --nEvt 300000 --inputFilesPerJob 2 --particles gamma --recprod --simInput $runname/training_simulation --addNoise
+    # python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_withnoise --nEvt 300000 --inputFilesPerJob 2 --particles gamma --recprod --simInput $runname/training_simulation --addNoise
 
 
     # for endcap
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_simulation_endcap_200k --nEvt 200000 --particles gamma --simprod --thetaMinMax 5 40" "$runname/log/simulateEventsForMVATrainingEndcap.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction_endcap_200k_topo --nEvt 200000 --particles gamma --recprod --simInput $runname/training_simulation_endcap_200k" "$runname/log/reconstructEventsForMVATrainingEndcap.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_simulation_endcap_300k_0_22 --nEvt 300000 --particles gamma --simprod --thetaMinMax 5 40" "$runname/log/simulateEventsForMVATrainingEndcap.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/training_reconstruction_endcap_300k_0_22 --nEvt 300000 --particles gamma --recprod --simInput $runname/training_simulation_endcap_300k_0_22" "$runname/log/reconstructEventsForMVATrainingEndcap.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_simulation_endcap_200k --nEvt 200000 --particles gamma --simprod --thetaMinMax 5 40" "$runname/log/simulateEventsForMVATrainingEndcap.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_endcap_200k_topo --nEvt 200000 --particles gamma --recprod --simInput $runname/training_simulation_endcap_200k" "$runname/log/reconstructEventsForMVATrainingEndcap.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_simulation_endcap_300k_0_22 --nEvt 300000 --particles gamma --simprod --thetaMinMax 5 40" "$runname/log/simulateEventsForMVATrainingEndcap.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/training_reconstruction_endcap_300k_0_22 --nEvt 300000 --particles gamma --recprod --simInput $runname/training_simulation_endcap_300k_0_22" "$runname/log/reconstructEventsForMVATrainingEndcap.log"
 fi
 
 
@@ -347,86 +370,76 @@ fi
 # Produce events at various fixed energies and run clustering algs to form clusters to study resolutions
 if (( $doClustersForMVAEvaluation > 0 )); then
     # without updated SFs and up/downstream corrections
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters --nEvt 5000 --particles gamma e- --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters" "$runname/log/createClustersForEvaluation.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 135000 180000 --clusters" "$runname/log/createClustersForEvaluation_highE.log"
-    exec_cmd "python -u runParallel.py --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --thetas 20" "$runname/log/createClustersForEvaluationEndcap.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma e- --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters" "$runname/log/createClustersForEvaluation.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 135000 180000 --clusters" "$runname/log/createClustersForEvaluation_highE.log"
+    exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters" "$runname/log/createClustersForEvaluation.log"
+    # large production, for evaluation of angular resolution, theta in 40-140 degrees
+    # sim + reco
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_for_angle --nEvt 50000 --particles gamma --energies 300 500 1000 5000 10000 20000 30000 50000 75000 100000 --thetaMinMax 40 140 --clusters" "$runname/log/createClustersForAngularResolution.log"
+    # reco only
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_for_angle_recentered_theta --nEvt 50000 --particles gamma --energies 300 500 1000 5000 10000 20000 30000 50000 75000 100000 --thetaMinMax 40 140 --clusters --simInput $runname/clusters_for_angle" "$runname/log/createClustersForAngularResolution.log"
 
     # sim done, but reco failed, so resubmitting only reco
-    #exec_cmd "python -u runParallel.py --outDir $runname/clusters --nEvt 5000 --particles gamma e- --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --simInput $runname/clusters" "$runname/log/createClustersForEvaluation.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 135000 180000 --clusters --simInput $runname/clusters" "$runname/log/createClustersForEvaluation_highE.log"
+    #exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma e- --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --simInput $runname/clusters" "$runname/log/createClustersForEvaluation.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --particles gamma --energies 135000 180000 --clusters --simInput $runname/clusters" "$runname/log/createClustersForEvaluation_highE.log"
 
     # with updated SFs and up/downstream corrections
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters --nEvt 5000 --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --SF $runname/sampling/SF.json --corrections $runname/upstream/corr_params_1d.json" "log/createClustersForEvaluation.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters --nEvt 5000 --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --SF $runname/sampling/SF.json --corrections $runname/upstream/corr_params_1d.json" "log/createClustersForEvaluation.log"
     # do clusters using same simulation of previous production but adding xtalk in reconstruction
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters_with_xtalk --nEvt 5000 --particles gamma --energies 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addCrosstalk --simInput $runname/clusters" "log/createClustersForEvaluationWithXTalk.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_with_xtalk --nEvt 5000 --particles gamma --energies 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addCrosstalk --simInput $runname/clusters" "log/createClustersForEvaluationWithXTalk.log"
     # do clusters using same simulation of previous production but adding noise in reconstruction
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters_with_noise --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --simInput $runname/clusters" "log/createClustersForEvaluationWithNoise.log"
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters_nothreshold_topo --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 --clusters --simInput $runname/clusters" "log/createClustersWithoutThresholdTopo.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_with_noise --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --simInput $runname/clusters" "log/createClustersForEvaluationWithNoise.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_nothreshold_topo --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 --clusters --simInput $runname/clusters" "log/createClustersWithoutThresholdTopo.log"
     # do clusters using same simulation of previous production but adding noise and xtalk in reconstruction
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters_with_noise_and_xtalk --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --simInput $runname/clusters" "log/createClustersForEvaluationWithNoiseAndXTalk.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_with_noise_and_xtalk --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --simInput $runname/clusters" "log/createClustersForEvaluationWithNoiseAndXTalk.log"
 
-    # python -u runParallel.py --outDir $runname/clusters_smallSWcluster_xtalk --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --simInput $runname/clusters
+    # python -u runParallel.py -j $nThreads --outDir $runname/clusters_smallSWcluster_xtalk --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --simInput $runname/clusters
 
-    # python -u runParallel.py --outDir $runname/clusters_stdsize_noise_xtalk --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --simInput $runname/clusters
-    # python -u runParallel.py --outDir $runname/clusters_stdsize_noise_xtalk --nEvt 5000 --particles gamma pi0 --energies 300 500 1000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --runPhotonID --calibrateClusters
+    # python -u runParallel.py -j $nThreads --outDir $runname/clusters_stdsize_noise_xtalk --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --simInput $runname/clusters
+    # python -u runParallel.py -j $nThreads --outDir $runname/clusters_stdsize_noise_xtalk --nEvt 5000 --particles gamma pi0 --energies 300 500 1000 15000 20000 30000 50000 75000 100000 --clusters --addNoise --addCrosstalk --runPhotonID --calibrateClusters
 
     # noise debug: neutrinos + noise
-    # exec_cmd "python -u runParallel.py --outDir $runname/clusters_with_noise --nEvt 50 --particles nu_e --energies 100000 --clusters --addNoise" "log/createClustersForEvaluationWithNoise.log"
+    # exec_cmd "python -u runParallel.py -j $nThreads --outDir $runname/clusters_with_noise --nEvt 50 --particles nu_e --energies 100000 --clusters --addNoise" "log/createClustersForEvaluationWithNoise.log"
 fi
 
 if (( $doClustersWithCalibrations > 0)); then
-    python -u runParallel.py --outDir $runname/clusters_smallSWcluster --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --simInput $runname/clusters --calibrateClusters --runPhotonID
+    python -u runParallel.py -j $nThreads --outDir $runname/clusters_smallSWcluster --nEvt 5000 --particles gamma --energies 300 500 1000 5000 10000 15000 20000 30000 50000 75000 100000 --clusters --simInput $runname/clusters --calibrateClusters --runPhotonID
 fi
-
-# Compute resolutions and responses of the clusters produced in the previous step, also applying the MVA calibrations
-if (( $doComputeResolutions > 0 )); then
-    python compute_resolutions.py --inputDir $runname/clusters --outFile $runname/results.csv --clusters CaloClusters CorrectedCaloClusters CaloTopoClusters CorrectedCaloTopoClusters --MVAcalibCalo $runname/training_calo.json --MVAcalibTopo $runname/training_topo.json
-
-    # Make resolution plots
-    # - for each energy point estimate the responses and resolutions
-    python plot_resolutions.py --outDir $runname --doFits plot $runname/results.csv --all
-    # - compare the resolutions among different cluster collections and calibrations
-    # 1. showing also raw clusters and clusters with up/downstream corrections
-    python plot_resolutions.py --outDir $runname --doFits compare clusters CaloClusters CorrectedCaloClusters CaloTopoClusters CorrectedCaloTopoClusters CalibratedCaloClusters CalibratedCaloTopoClusters $runname/results.csv --all
-    # 2. showing only the calibrated clusters
-    python plot_resolutions.py --outDir $runname --doFits compare clusters CalibratedCaloClusters CalibratedCaloTopoClusters $runname/results.csv --all
-fi
-
 
 # Generic simulation and reconstruction jobs
 if (( $doSimulation > 0 )); then
     # gamma and pi0, 20 GeV, 90 degrees, 1k events
-    # python runParallel.py --outDir $runname/simulation --nEvt 1000 --energies 20000 --particles gamma pi0 --sim
+    # python runParallel.py -j $nThreads --outDir $runname/simulation --nEvt 1000 --energies 20000 --particles gamma pi0 --sim
     # e-, 10 GeV, 90 degrees, 10k events
-    # python runParallel.py --outDir $runname/simulation --nEvt 10000 --energies 10000 --particles e- --sim
+    # python runParallel.py -j $nThreads --outDir $runname/simulation --nEvt 10000 --energies 10000 --particles e- --sim
     # gamma, 10 GeV, 90 degrees, 10 events
-    # python runParallel.py --outDir $runname/simulation --nEvt 10 --energies 10000 --particles gamma --sim
+    # python runParallel.py -j $nThreads --outDir $runname/simulation --nEvt 10 --energies 10000 --particles gamma --sim
     # pi-, 10 GeV, 90 degrees, 10 events
-    # python runParallel.py --outDir $runname/simulation --nEvt 10 --energies 10000 --particles pi- --sim
+    # python runParallel.py -j $nThreads --outDir $runname/simulation --nEvt 10 --energies 10000 --particles pi- --sim
     # gamma, 10 GeV, 155-170 degrees, 10 events
-    python runParallel.py --outDir $runname/simulation --nEvt 10 --energies 10000 --particles gamma --thetaMinMax 155 170 --sim
+    python runParallel.py -j $nThreads --outDir $runname/simulation --nEvt 10 --energies 10000 --particles gamma --thetaMinMax 155 170 --sim
 fi
 
 if (( $doReconstruction > 0 )); then
     # gamma and pi0, 20 GeV, 90 degrees, 1k events
-    # python runParallel.py --outDir $runname/reconstruction --nEvt 1000 --energies 20000 --particles gamma pi0 --reco --simInput $runname/simulation
+    # python runParallel.py -j $nThreads --outDir $runname/reconstruction --nEvt 1000 --energies 20000 --particles gamma pi0 --reco --simInput $runname/simulation
     # e-, 10 GeV, 90 degrees, 10k events
-    # python runParallel.py --outDir $runname/reconstruction --nEvt 10000 --energies 10000 --particles e- --reco --simInput $runname/simulation
+    # python runParallel.py -j $nThreads --outDir $runname/reconstruction --nEvt 10000 --energies 10000 --particles e- --reco --simInput $runname/simulation
     # gamma, 10 GeV, 90 degrees, 10 events
-    # python runParallel.py --outDir $runname/reconstruction --nEvt 10 --energies 10000 --particles gamma --reco --simInput $runname/simulation
+    # python runParallel.py -j $nThreads --outDir $runname/reconstruction --nEvt 10 --energies 10000 --particles gamma --reco --simInput $runname/simulation
     # pi-, 10 GeV, 90 degrees, 10 events
-    # python runParallel.py --outDir $runname/reconstruction --nEvt 10 --energies 10000 --particles pi- --reco --simInput $runname/simulation --includeHCal
+    # python runParallel.py -j $nThreads --outDir $runname/reconstruction --nEvt 10 --energies 10000 --particles pi- --reco --simInput $runname/simulation --includeHCal
     # gamma, 10 GeV, 155-170 degrees, 10 events
-    python runParallel.py --outDir $runname/reconstruction --nEvt 10 --energies 10000 --particles gamma --reco --simInput $runname/simulation --thetaMinMax 155 170
+    python runParallel.py -j $nThreads --outDir $runname/reconstruction --nEvt 10 --energies 10000 --particles gamma --reco --simInput $runname/simulation --thetaMinMax 155 170
 fi
 
 
 # Generic simulation and reconstruction big production jobs
 if (( $doProductionSim > 0 )); then
-    python runParallel.py --outDir $runname/production_simulation --nEvt 100000 --particles gamma pi0 --simprod
+    python runParallel.py -j $nThreads --outDir $runname/production_simulation --nEvt 100000 --particles gamma pi0 --simprod
 fi
 
 if (( $doProductionReco > 0 )); then
-    python runParallel.py --outDir $runname/production_reconstruction --nEvt 100000 --particles gamma pi0 --recprod --simInput $runname/production_simulation
+    python runParallel.py -j $nThreads --outDir $runname/production_reconstruction --nEvt 100000 --particles gamma pi0 --recprod --simInput $runname/production_simulation
 fi
 

@@ -184,9 +184,13 @@ print("number of layers updated in $ALLEGRO/sampling_fractions/FCC_calo_analysis
 os.system("sed -i 's/layerWidth\", default=.*,/layerWidth\", default=%s,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % string_for_layerWidth)
 print("number and thickness of layers updated in $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py")
 
-# modify the number of layers in run_ALLEGRO_reco.py
-os.system("sed -i --follow-symlinks 's/ecalBarrelLayers = .*/ecalBarrelLayers = %d/' $FCCBASEDIR/run/run_ALLEGRO_reco.py" % numberOfLayer)
-print("number of layers updated in run_ALLEGRO_reco.py")
+# modify the number of layers in the official ALLEGRO reconstruction in FCC-config
+# (the constant is set inside a function: change only its assignment, keeping the indentation)
+recoCommonScript = "$FCCCONFIG/FullSim/ALLEGRO/ALLEGRO_common/run_digi_reco_common.py"
+if os.system("sed -i 's/^\\(\\s*\\)ecalBarrelLayers = .*/\\1ecalBarrelLayers = %d/' %s" % (numberOfLayer, recoCommonScript)) == 0:
+    print("number of layers updated in", recoCommonScript)
+else:
+    print("WARNING: could not update the number of layers in", recoCommonScript)
 
 # modify the number of layers in noise_map.py and neighbours.py in ALLEGRO
 os.system("sed -i 's/ecalBarrelNumLayers = .*/ecalBarrelNumLayers = %d/' $ALLEGRO/noise_maps/noise_map.py $ALLEGRO/neighbor_maps/neighbours.py" % numberOfLayer)
@@ -200,8 +204,10 @@ print("number of layers updated in $ALLEGRO/noise_maps/noise_map.py and $ALLEGRO
 # the *4 for theta is because the grid size reflects the width of the strip cells, but the
 # tower sizes are defined in units of big cells (corresponding to 4 cells)
 if theta_bin_size_eval > 0 and n_modules > 0:
-    os.system(r"sed -i --follow-symlinks 's#deltaThetaTower.*$#deltaThetaTower=4 * %s, deltaPhiTower=2 * 2 * pi \/ %d.,#'  $FCCBASEDIR/run/run_ALLEGRO_reco.py" % (theta_bin_size.replace("/", " / "), n_modules))
-    print("theta-phi tower size updated in run_ALLEGRO_reco.py")
+    if os.system(r"sed -i 's#deltaThetaTower.*$#deltaThetaTower=4 * %s, deltaPhiTower=2 * 2 * pi \/ %d.,#' %s" % (theta_bin_size.replace("/", " / "), n_modules, recoCommonScript)) == 0:
+        print("theta-phi tower size updated in", recoCommonScript)
+    else:
+        print("WARNING: could not update the theta-phi tower size in", recoCommonScript)
 
 
 # Write upstream correction xml
