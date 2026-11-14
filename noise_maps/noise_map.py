@@ -63,12 +63,25 @@ activeVolumesNumbers = []
 activeVolumesTheta = []
 outputFileName = "cellNoise_map_electronicsNoiseLevel"
 
+# geometry tools of the calorimeters, for the cell indexing service used by the noise tools
+geotools = []
+
 if "ecalBarrel" in detectors:
     ecalBarrelNoiseFile = "noise_capa_ecalbarrel/elecNoise_ecalBarrelFCCee_theta.root"
     ecalBarrelNoiseRMSHistName = "h_elecNoise_fcc_"
     if not os.path.isfile(ecalBarrelNoiseFile):
         print(f"Error: noise file '{ecalBarrelNoiseFile}' does not exist.", file=sys.stderr)
         sys.exit(1)
+
+    from Configurables import TubeLayerModuleThetaCaloTool
+    geotools += [TubeLayerModuleThetaCaloTool("ecalBarrelGeometryTool",
+                                              readoutName=ecalBarrelReadoutName,
+                                              activeVolumeName="LAr_sensitive",
+                                              activeFieldName="layer",
+                                              activeVolumesNumber=ecalBarrelNumLayers,
+                                              fieldNames=["system"],
+                                              fieldValues=[ecalBarrelSysId],
+                                              OutputLevel=INFO)]
 
     # cell positioning and noise tool for the ecal barrel
     from Configurables import CellPositionsECalBarrelModuleThetaSegTool
@@ -103,6 +116,10 @@ if "ecalEndcap" in detectors:
     if not os.path.isfile(ecalEndcapNoiseFile):
         print(f"Error: noise file '{ecalEndcapNoiseFile}' does not exist.", file=sys.stderr)
         sys.exit(1)
+
+    from Configurables import TurbineEndcapCaloTool
+    geotools += [TurbineEndcapCaloTool("ecalEndcapGeometryTool",
+                                       readoutName=ecalEndcapReadoutName)]
 
     # cell positioning and noise tool for the ecal endcap
     from Configurables import CellPositionsECalEndcapTurbineSegTool
@@ -148,6 +165,9 @@ if "hcalBarrel" in detectors:
     #                                       OutputLevel = INFO)
     # ConstNoiseTool provides constant noise for all calo subsystems
     # here we are going to use it only for hcal barrel
+    from Configurables import HCalPhiThetaCaloTool
+    geotools += [HCalPhiThetaCaloTool("hcalBarrelGeometryTool",
+                                      readoutName=hcalBarrelReadoutName)]
     from Configurables import ConstNoiseTool
     HCalBarrelNoiseTool = ConstNoiseTool("HCalBarrelNoiseTool",
                                          detectors=["HCAL_Barrel"],
@@ -169,6 +189,9 @@ else:
     HCalBarrelNoiseTool = None
 
 if "hcalEndcap" in detectors:
+    from Configurables import HCalPhiThetaCaloTool
+    geotools += [HCalPhiThetaCaloTool("hcalEndcapGeometryTool",
+                                      readoutName=hcalEndcapReadoutName)]
     from Configurables import ConstNoiseTool
     HCalEndcapNoiseTool = ConstNoiseTool("HCalEndcapNoiseTool",
                                          detectors=["HCAL_Endcap"],
@@ -186,6 +209,10 @@ if "hcalEndcap" in detectors:
 else:
     HCalEndcapNoiseTool = None
 
+
+# cell indexing service (the noise tools use it to map the cells to the entries of the noise histograms)
+from Configurables import k4__recCalo__CaloCellIndexerSvc
+cellIndexerSvc = k4__recCalo__CaloCellIndexerSvc(GeoTools=geotools)
 
 # create the noise file
 # the tool wants the system IDs, maybe we could have passed the names instead
@@ -215,7 +242,7 @@ ApplicationMgr(TopAlg=[],
                EvtSel='NONE',
                EvtMax=1,
                # order is important, as GeoSvc is needed by G4SimSvc
-               ExtSvc=[geoservice, noisePerCell, 'RndmGenSvc'],
+               ExtSvc=[geoservice, cellIndexerSvc, noisePerCell, 'RndmGenSvc'],
                OutputLevel=INFO
                )
 print("Noise map will be saved in file", noisePerCell.outputFileName)
