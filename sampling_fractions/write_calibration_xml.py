@@ -210,10 +210,6 @@ if args.update:
 
     # modify the number of layers in noise_map.py and neighbours.py in ALLEGRO
     os.system("sed -i 's/ecalBarrelNumLayers = .*/ecalBarrelNumLayers = %d/' $ALLEGRO/noise_maps/noise_map.py $ALLEGRO/neighbor_maps/neighbours.py" % numberOfLayer)
-    print("number of layers updated in $ALLEGRO/noise_map.py and $ALLEGRO/neighbor_maps/neighbours.py")
-
-    # modify the number of layers in noise_map.py and neighbours.py in ALLEGRO
-    os.system("sed -i 's/ecalBarrelNumLayers = .*/ecalBarrelNumLayers = %d/' $ALLEGRO/noise_maps/noise_map.py $ALLEGRO/neighbor_maps/neighbours.py" % numberOfLayer)
     print("number of layers updated in $ALLEGRO/noise_maps/noise_map.py and $ALLEGRO/neighbor_maps/neighbours.py")
 
     # modify the tower definition in clustering algorithms
