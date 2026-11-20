@@ -1,9 +1,13 @@
+import argparse
 import os
 import sys
 from xml.dom import minidom
 import re
 from math import radians, sqrt, cos
 # python write_calibration_xml.py ../../k4geo/FCCee/ALLEGRO/compact/ALLEGRO_o1_v03/ECalBarrel_thetamodulemerged.xml
+# By default the calibration xml files are written next to the input file, and the number of layers and the other
+# quantities derived from it are updated in the scripts of ALLEGRO and FCC-config. With --outdir the xml files are
+# written in another directory, and with --no-update the scripts are left untouched
 
 def add_newline(xmlfile):
     with open(xmlfile, 'a') as file:
@@ -17,9 +21,20 @@ def get_length(node):
     return float(string.split("*")[0])
 
 
-input_xml_path = sys.argv[1]
+parser = argparse.ArgumentParser(description="Write the xml files of the ECAL barrel for the calculation of the sampling fractions and of the upstream/downstream corrections")
+parser.add_argument("input_xml", help="xml file of the ECAL barrel")
+parser.add_argument("--outdir", default=None, help="directory of the output xml files (default: the one of the input file)")
+parser.add_argument("--no-update", dest="update", action="store_false",
+                    help="do not update the number of layers (and the other derived quantities) in the scripts of ALLEGRO and FCC-config")
+args = parser.parse_args()
+
+input_xml_path = args.input_xml
 output_xml_path_sf = input_xml_path.replace(".xml", "_calibration.xml")
 output_xml_path_upstream = input_xml_path.replace(".xml", "_upstream.xml")
+if args.outdir is not None:
+    os.makedirs(args.outdir, exist_ok=True)
+    output_xml_path_sf = os.path.join(args.outdir, os.path.basename(output_xml_path_sf))
+    output_xml_path_upstream = os.path.join(args.outdir, os.path.basename(output_xml_path_upstream))
 detDim_xml_path = os.path.join(os.path.dirname(input_xml_path), "DectDimensions.xml")
 
 list_of_pair_layerThickness_numberOfLayer = []
@@ -173,41 +188,38 @@ for pair_layerThickness_numberOfLayer in list_of_pair_layerThickness_numberOfLay
         layer += 1
 print("Radial depths: ",radialDepths)
 
-# modify the number of layer in sampling fraction and upstream config files
-os.system("sed -i 's/ecalBarrelLayers =.*/ecalBarrelLayers = %d/' $ALLEGRO/sampling_fractions/fcc_ee_samplingFraction_inclinedEcal.py $ALLEGRO/upstream/fcc_ee_upstream_inclinedEcal.py" % numberOfLayer)
-print("number of layers updated in $ALLEGRO/sampling_fractions/fcc_ee_samplingFraction_inclinedEcal.py and $ALLEGRO/upstream/fcc_ee_upstream_inclinedEcal.py")
+if args.update:
+    # modify the number of layer in sampling fraction and upstream config files
+    os.system("sed -i 's/ecalBarrelLayers =.*/ecalBarrelLayers = %d/' $ALLEGRO/sampling_fractions/fcc_ee_samplingFraction_inclinedEcal.py $ALLEGRO/upstream/fcc_ee_upstream_inclinedEcal.py" % numberOfLayer)
+    print("number of layers updated in $ALLEGRO/sampling_fractions/fcc_ee_samplingFraction_inclinedEcal.py and $ALLEGRO/upstream/fcc_ee_upstream_inclinedEcal.py")
 
-# modify the layer layout in plot_sampling_fraction script
-os.system(r"sed -i 's/default=\[1\] \*.*,/default=\[1\] \* %d,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % numberOfLayer)
-os.system("sed -i 's/totalNumLayers\", default = .*,/totalNumLayers\", default = %d,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % numberOfLayer)
-print("number of layers updated in $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py")
-os.system("sed -i 's/layerWidth\", default=.*,/layerWidth\", default=%s,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % string_for_layerWidth)
-print("number and thickness of layers updated in $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py")
+    # modify the layer layout in plot_sampling_fraction script
+    os.system(r"sed -i 's/default=\[1\] \*.*,/default=\[1\] \* %d,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % numberOfLayer)
+    os.system("sed -i 's/totalNumLayers\", default = .*,/totalNumLayers\", default = %d,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % numberOfLayer)
+    print("number of layers updated in $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py")
+    os.system("sed -i 's/layerWidth\", default=.*,/layerWidth\", default=%s,/' $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py" % string_for_layerWidth)
+    print("number and thickness of layers updated in $ALLEGRO/sampling_fractions/FCC_calo_analysis_cpp/plot_samplingFraction.py")
 
-# modify the number of layers in the official ALLEGRO reconstruction in FCC-config
-# (the constant is set inside a function: change only its assignment, keeping the indentation)
-recoCommonScript = "$FCCCONFIG/FullSim/ALLEGRO/ALLEGRO_common/run_digi_reco_common.py"
-if os.system("sed -i 's/^\\(\\s*\\)ecalBarrelLayers = .*/\\1ecalBarrelLayers = %d/' %s" % (numberOfLayer, recoCommonScript)) == 0:
-    print("number of layers updated in", recoCommonScript)
-else:
-    print("WARNING: could not update the number of layers in", recoCommonScript)
-
-# modify the number of layers in noise_map.py and neighbours.py in ALLEGRO
-os.system("sed -i 's/ecalBarrelNumLayers = .*/ecalBarrelNumLayers = %d/' $ALLEGRO/noise_maps/noise_map.py $ALLEGRO/neighbor_maps/neighbours.py" % numberOfLayer)
-print("number of layers updated in $ALLEGRO/noise_map.py and $ALLEGRO/neighbor_maps/neighbours.py")
-
-# modify the number of layers in noise_map.py and neighbours.py in ALLEGRO
-os.system("sed -i 's/ecalBarrelNumLayers = .*/ecalBarrelNumLayers = %d/' $ALLEGRO/noise_maps/noise_map.py $ALLEGRO/neighbor_maps/neighbours.py" % numberOfLayer)
-print("number of layers updated in $ALLEGRO/noise_maps/noise_map.py and $ALLEGRO/neighbor_maps/neighbours.py")
-
-# modify the tower definition in clustering algorithms
-# the *4 for theta is because the grid size reflects the width of the strip cells, but the
-# tower sizes are defined in units of big cells (corresponding to 4 cells)
-if theta_bin_size_eval > 0 and n_modules > 0:
-    if os.system(r"sed -i 's#deltaThetaTower.*$#deltaThetaTower=4 * %s, deltaPhiTower=2 * 2 * pi \/ %d.,#' %s" % (theta_bin_size.replace("/", " / "), n_modules, recoCommonScript)) == 0:
-        print("theta-phi tower size updated in", recoCommonScript)
+    # modify the number of layers in the official ALLEGRO reconstruction in FCC-config
+    # (the constant is set inside a function: change only its assignment, keeping the indentation)
+    recoCommonScript = "$FCCCONFIG/FullSim/ALLEGRO/ALLEGRO_common/run_digi_reco_common.py"
+    if os.system("sed -i 's/^\\(\\s*\\)ecalBarrelLayers = .*/\\1ecalBarrelLayers = %d/' %s" % (numberOfLayer, recoCommonScript)) == 0:
+        print("number of layers updated in", recoCommonScript)
     else:
-        print("WARNING: could not update the theta-phi tower size in", recoCommonScript)
+        print("WARNING: could not update the number of layers in", recoCommonScript)
+
+    # modify the number of layers in noise_map.py and neighbours.py in ALLEGRO
+    os.system("sed -i 's/ecalBarrelNumLayers = .*/ecalBarrelNumLayers = %d/' $ALLEGRO/noise_maps/noise_map.py $ALLEGRO/neighbor_maps/neighbours.py" % numberOfLayer)
+    print("number of layers updated in $ALLEGRO/noise_maps/noise_map.py and $ALLEGRO/neighbor_maps/neighbours.py")
+
+    # modify the tower definition in clustering algorithms
+    # the *4 for theta is because the grid size reflects the width of the strip cells, but the
+    # tower sizes are defined in units of big cells (corresponding to 4 cells)
+    if theta_bin_size_eval > 0 and n_modules > 0:
+        if os.system(r"sed -i 's#deltaThetaTower.*$#deltaThetaTower=4 * %s, deltaPhiTower=2 * 2 * pi \/ %d.,#' %s" % (theta_bin_size.replace("/", " / "), n_modules, recoCommonScript)) == 0:
+            print("theta-phi tower size updated in", recoCommonScript)
+        else:
+            print("WARNING: could not update the theta-phi tower size in", recoCommonScript)
 
 
 # Write upstream correction xml
