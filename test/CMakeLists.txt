@@ -62,6 +62,10 @@ add_test(NAME ctest_xtalk
                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
                COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_xtalk.sh)
 
+add_test(NAME ctest_multiparticle_gun
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/Testing/Temporary
+               COMMAND ${PROJECT_SOURCE_DIR}/test/ctest_multiparticle_gun.sh)
+
 # For LD_LIBRARY_PATH
 # ${PROJECT_BINARY_DIR}                                         # The files <plugins>.components and <plugins>.confdb are here
 # ${PROJECT_BINARY_DIR}/${PROJECT_NAME}                         # The plugins (.so) are here
