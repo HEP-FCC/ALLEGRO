@@ -8,10 +8,10 @@ from einops import rearrange
 from torch import nn
 from torch.utils.checkpoint import checkpoint
 
-from src.gatr_v111.layers.attention.config import SelfAttentionConfig
-from src.gatr_v111.layers.gatr_block import GATrBlock
-from src.gatr_v111.layers.linear import EquiLinear
-from src.gatr_v111.layers.mlp.config import MLPConfig
+from src.gatr_v111_onnx.layers.attention.config import SelfAttentionConfig
+from src.gatr_v111_onnx.layers.gatr_block import GATrBlock
+from src.gatr_v111_onnx.layers.linear import EquiLinear
+from src.gatr_v111_onnx.layers.mlp.config import MLPConfig
 
 # Default rearrange patterns for odd blocks
 _MV_REARRANGE_PATTERN = "... i j c x -> ... j i c x"
