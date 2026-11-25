@@ -10,11 +10,18 @@ It uses LightGBM to optimise the BDT weights.
 The output model is saved to ONNX.
 The input features and output target can be read from ROOT files produced with the ALLEGRO simulation, or from CSV or pickle files produced by a previous run of the script.
 
-[!WARNING]
-Models trained with `useExtraFeatures=True` use additional input variables compared to the default configuration. At the moment, these models may not be directly usable in reconstruction with the default `CalibrateCaloClusters` input-shape check, which expects `m_numLayersTotal + 1` input features.
-If the exported ONNX model contains the extra features, the corresponding reconstruction-side configuration/code must be updated consistently, e.g. to expect `m_numLayersTotal + 3` input features for this case.
+Both kinds of models can be used in the reconstruction by `CalibrateCaloClusters` (k4RecCalorimeter), which takes the
+layout of the inputs from the input width of the ONNX model:
+- models trained with `useExtraFeatures=False` have `m_numLayersTotal + 1` inputs: the energy fractions in the layers
+  and the cluster energy;
+- models trained with `useExtraFeatures=True` have `m_numLayersTotal + 4` inputs: the energy fractions in the layers,
+  the cluster theta, theta modulo the theta size of the cells (`deltaThetaCalo`), phi modulo the phi size of the cells
+  (`deltaPhiCalo`), and the cluster energy. They need k4RecCalorimeter v0.1.0pre19 or later (#261): older versions
+  reject them in the check of the input width.
 
-Models trained with `useExtraFeatures=False` keep the default input layout and can be used with the current default reconstruction setup.
+The position of the cluster (hence the extra features) and, for the sliding-window clusters, the energy depend on
+the options of the clustering (e.g. `recentrePositionWindow`): the model should be trained on samples reconstructed
+with the same options as the samples to calibrate.
 
 ## Installation
 
@@ -41,11 +48,29 @@ python train_calibration.py
 
 ```
 
+The model is saved in `models/` in LightGBM (`.txt`) and ONNX (`.onnx`) format, together with a `.json` file describing
+how it was produced, to make it reproducible: input features and target, date, user, command, git commit of ALLEGRO,
+versions of the python packages, parameters and results of the training, and for each input sample the files, the
+number of events, the particle types and the ranges of true energy and theta, the Key4hep stack, the versions of
+EDM4hep and podio, the detector, the options of the algorithms and tools making the cells and the clusters, and all
+the Gaudi options of the reconstruction (read from the `configuration_metadata` of the input files).
+
 To evaluate the BDT performance: adjust properly the parameters in the script `test_calibration.py`, and execute it with:
 
 ```
 python test_calibration.py
 ```
+
+The settings at the top of both scripts can also be overridden with command line options (`--help`), e.g. to train
+on given files and evaluate on samples with given energies:
+
+```
+python train_calibration.py --input <files> --clusters EMBCaloClusters --suffix _test --no-extra-features
+python test_calibration.py --input-pattern 'clusters/reconstruction_energy_{energy}_theta_90_particle_gamma.root' \
+    --energies 1000 10000 100000 --particle gamma --clusters EMBCaloClusters --suffix _test --no-extra-features
+```
+`--theta-range MIN MAX` evaluates the performance only for particles with min(theta, 180 - theta) in [MIN, MAX)
+degrees, e.g. on samples with a flat theta distribution.
 
 The plot comparing the energy resolution for LAr+Pb and LKr+W barrel ECAL for the ALLEGRO paper was done as follows:
 * extract sampling fractions for the two scenarios, using options `doCalibrationFiles` and `doSamplingFractions` in file [run_all_chain.sh](https://github.com/HEP-FCC/ALLEGRO/blob/main/utils/run_all_chain.sh) as described [here](https://github.com/HEP-FCC/ALLEGRO/sampling_fractions/README.md)
