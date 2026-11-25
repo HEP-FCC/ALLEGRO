@@ -13,6 +13,10 @@ Average per-layer sampling fractions used in ALLEGRO o1_v03 and o2_v01 as of Jul
 mkdir samplingfractions
 cd samplingfractions
 git clone ssh://git@gitlab.cern.ch:7999/gmarchio/FCC-scripts.git
+```
+
+Uncomment ALLEGRO in `FCC-scripts/packages.txt` and execute:
+```
 source FCC-scripts/bootstrap.sh
 ```
 
