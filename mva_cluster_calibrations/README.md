@@ -10,11 +10,18 @@ It uses LightGBM to optimise the BDT weights.
 The output model is saved to ONNX.
 The input features and output target can be read from ROOT files produced with the ALLEGRO simulation, or from CSV or pickle files produced by a previous run of the script.
 
-[!WARNING]
-Models trained with `useExtraFeatures=True` use additional input variables compared to the default configuration. At the moment, these models may not be directly usable in reconstruction with the default `CalibrateCaloClusters` input-shape check, which expects `m_numLayersTotal + 1` input features.
-If the exported ONNX model contains the extra features, the corresponding reconstruction-side configuration/code must be updated consistently, e.g. to expect `m_numLayersTotal + 3` input features for this case.
+Both kinds of models can be used in the reconstruction by `CalibrateCaloClusters` (k4RecCalorimeter), which takes the
+layout of the inputs from the input width of the ONNX model:
+- models trained with `useExtraFeatures=False` have `m_numLayersTotal + 1` inputs: the energy fractions in the layers
+  and the cluster energy;
+- models trained with `useExtraFeatures=True` have `m_numLayersTotal + 4` inputs: the energy fractions in the layers,
+  the cluster theta, theta modulo the theta size of the cells (`deltaThetaCalo`), phi modulo the phi size of the cells
+  (`deltaPhiCalo`), and the cluster energy. They need k4RecCalorimeter v0.1.0pre19 or later (#261): older versions
+  reject them in the check of the input width.
 
-Models trained with `useExtraFeatures=False` keep the default input layout and can be used with the current default reconstruction setup.
+The position of the cluster (hence the extra features) and, for the sliding-window clusters, the energy depend on
+the options of the clustering (e.g. `recentrePositionWindow`): the model should be trained on samples reconstructed
+with the same options as the samples to calibrate.
 
 ## Installation
 

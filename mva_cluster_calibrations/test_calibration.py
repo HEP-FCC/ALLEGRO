@@ -213,7 +213,7 @@ def read_metadata(filename, clusters):
     shapeParameterNames = []
 
     # Invoke the shell script and capture the output
-    output = subprocess.check_output(['./getMetaData.sh', filename, clusters], shell=False)
+    output = subprocess.check_output([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'getMetaData.sh'), filename, clusters], shell=False)
 
     # Decode the output (it's a bytes object) and split it into lines
     lines = output.decode().splitlines()

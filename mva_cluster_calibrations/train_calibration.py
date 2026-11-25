@@ -181,7 +181,8 @@ def parseString(s):
 
 def getAlgSettingsFromLogFile(algName, logFileName):
     result_dict = {}
-    pattern = re.compile(rf"\[k4run\] Option name: {re.escape(algName)}\.(\S+) (.+)")
+    # "[k4run] Option name: ..." in older versions of k4run, "[k4run - INFO] k4run.main: Option name: ..." now
+    pattern = re.compile(rf"\[k4run.*\] .*Option name: {re.escape(algName)}\.(\S+) (.+)")
     with open(logFileName, 'r') as file:
         for line in file:
             match = pattern.match(line)
@@ -296,7 +297,7 @@ def read_metadata(filename, clusters):
     shapeParameterNames = []
 
     # Invoke the shell script and capture the output
-    output = subprocess.check_output(['./getMetaData.sh', filename, clusters], shell=False)
+    output = subprocess.check_output([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'getMetaData.sh'), filename, clusters], shell=False)
 
     # Decode the output (it's a bytes object) and split it into lines
     lines = output.decode().splitlines()
