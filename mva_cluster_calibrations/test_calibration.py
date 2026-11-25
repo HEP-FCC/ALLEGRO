@@ -99,10 +99,57 @@ calibrations = [
 
 # -------------------------------------------------------------------------------------------
 
+# command line options: they override the settings above, e.g. to run the script from the ALLEGRO workflow
+# (python test_calibration.py --help). Without options, the settings above are used.
+
+import argparse
+
+parser = argparse.ArgumentParser(description="Evaluate the MVA energy calibration of the clusters on samples at fixed "
+                                             "energies. The options override the settings at the top of the script.")
+parser.add_argument("--input-pattern", default=None,
+                    help="name of the reconstructed ROOT file of each energy, with {energy} (in MeV) and optionally "
+                         "{theta} and {particle} in place of their values, instead of basedir and the default names")
+parser.add_argument("--energies", nargs="+", type=int, default=None, help="energies of the samples (MeV)")
+parser.add_argument("--particle", default=None, help="particle of the samples (e.g. gamma)")
+parser.add_argument("--clusters", nargs="+", default=None,
+                    help="cluster collections to evaluate, each with the model trained for it")
+parser.add_argument("--label", default=None, help="label of the names of the output files")
+parser.add_argument("--suffix", default=None, help="suffix of the names of the model and output files")
+parser.add_argument("--extra-features", action=argparse.BooleanOptionalAction, default=None,
+                    help="the model uses also theta and the position in the cell as input features (useExtraFeatures)")
+parser.add_argument("--theta-range", nargs=2, type=float, default=None, metavar=("MIN", "MAX"),
+                    help="use only the particles with min(theta, 180-theta) in [MIN, MAX) degrees, e.g. to study the "
+                         "performance vs theta with samples with a theta range")
+parser.add_argument("--delta-theta", type=float, default=None,
+                    help="period in theta of the position of the cluster in the cell used as input feature (deltaThetaCalo, must be the same as the property deltaThetaCalo of CalibrateCaloClusters in the reconstruction; default: one strip, 0.009817477/4; the cells of the other layers and the towers are 4 strips)")
+parser.add_argument("--delta-phi", type=float, default=None,
+                    help="period in phi of the position of the cluster used as input feature (deltaPhiCalo, must be the same as the property deltaPhiCalo of CalibrateCaloClusters; default: one module, 2*pi/1536; the cells are 2 modules)")
+args = parser.parse_args()
+
+if args.energies:
+    energies = args.energies
+if args.particle:
+    particle = args.particle
+if args.clusters:
+    clusterCollections = args.clusters
+    calibrationFiles = args.clusters
+if args.label is not None:
+    label = args.label
+if args.suffix is not None:
+    suffix = args.suffix
+if args.extra_features is not None:
+    useExtraFeatures = args.extra_features
+
+# -------------------------------------------------------------------------------------------
+
 # some constants
 deltaThetaCalo = 0.009817477/4
 from math import pi
 deltaPhiCalo = 2*pi/1536
+if args.delta_theta is not None:
+    deltaThetaCalo = args.delta_theta
+if args.delta_phi is not None:
+    deltaPhiCalo = args.delta_phi
 
 # -------------------------------------------------------------------------------------------
 
@@ -240,8 +287,11 @@ def read_file(energy, particle, clusters, cells):
     elif clusters[0:4] == "EMEC":
         nLayers = 98
         theta = 20
-    filename = f"reconstruction_energy_{energy}_theta_{theta}_particle_{particle}.root"
-    fileWithPath = os.path.abspath(basedir) + "/" + filename
+    if args.input_pattern:
+        fileWithPath = os.path.abspath(args.input_pattern.format(energy=energy, theta=theta, particle=particle))
+    else:
+        filename = f"reconstruction_energy_{energy}_theta_{theta}_particle_{particle}.root"
+        fileWithPath = os.path.abspath(basedir) + "/" + filename
     treename = 'events'
     print('Reading file %s' % fileWithPath)
     f = uproot.open(fileWithPath)
@@ -562,6 +612,10 @@ if not readDataFromJson:
             if debug: print(ecl_vs_layer)
 
             # remove events without clusters
+            # optional selection in theta of the particle, folded around 90 degrees
+            if args.theta_range:
+                theta_folded = np.degrees(np.minimum(theta_part, np.pi - theta_part))
+                keep &= (theta_folded >= args.theta_range[0]) & (theta_folded < args.theta_range[1])
             p_part = p_part[keep]
             e_cl = e_cl[keep]
             rho_cl = rho_cl[keep]

@@ -54,6 +54,17 @@ To evaluate the BDT performance: adjust properly the parameters in the script `t
 python test_calibration.py
 ```
 
+The settings at the top of both scripts can also be overridden with command line options (`--help`), e.g. to train
+on given files and evaluate on samples with given energies:
+
+```
+python train_calibration.py --input <files> --clusters EMBCaloClusters --suffix _test --no-extra-features
+python test_calibration.py --input-pattern 'clusters/reconstruction_energy_{energy}_theta_90_particle_gamma.root' \
+    --energies 1000 10000 100000 --particle gamma --clusters EMBCaloClusters --suffix _test --no-extra-features
+```
+`--theta-range MIN MAX` evaluates the performance only for particles with min(theta, 180 - theta) in [MIN, MAX)
+degrees, e.g. on samples with a flat theta distribution.
+
 The plot comparing the energy resolution for LAr+Pb and LKr+W barrel ECAL for the ALLEGRO paper was done as follows:
 * extract sampling fractions for the two scenarios, using options `doCalibrationFiles` and `doSamplingFractions` in file [run_all_chain.sh](https://github.com/HEP-FCC/ALLEGRO/blob/main/utils/run_all_chain.sh) as described [here](https://github.com/HEP-FCC/ALLEGRO/sampling_fractions/README.md)
 * simulate and reconstruct events for training, using option `doClustersForMVATraining` in file [run_all_chain.sh](https://github.com/HEP-FCC/ALLEGRO/blob/main/utils/run_all_chain.sh)

@@ -94,6 +94,56 @@ inputFiles = {
 # -------------------------------------------------------------------------------------------
 
 
+# command line options: they override the settings above, e.g. to run the script from the ALLEGRO workflow
+# (python train_calibration.py --help). Without options, the settings above are used.
+
+import argparse
+import glob as _glob
+import os as _os
+
+parser = argparse.ArgumentParser(description="Train the MVA energy calibration of the clusters. The options override "
+                                             "the settings at the top of the script.")
+parser.add_argument("--input", nargs="+", default=None,
+                    help="reconstructed ROOT files to train on (wildcards allowed), instead of inputFiles")
+parser.add_argument("--log", default=None,
+                    help="log file of one of the reconstruction jobs, to print the settings of the clustering "
+                         "(with --input and without --log they are not printed)")
+parser.add_argument("--clusters", nargs="+", default=None, help="cluster collections to calibrate")
+parser.add_argument("--suffix", default=None, help="suffix of the names of the output files")
+parser.add_argument("--data-dir", default=None,
+                    help="directory where the input features and target are saved (csvpklDir)")
+parser.add_argument("--device", choices=["cpu", "gpu"], default=None, help="device used for the training")
+parser.add_argument("--extra-features", action=argparse.BooleanOptionalAction, default=None,
+                    help="use also theta and the position in the cell as input features (useExtraFeatures)")
+parser.add_argument("--delta-theta", type=float, default=None,
+                    help="period in theta of the position of the cluster in the cell used as input feature (deltaThetaCalo, must be the same as the property deltaThetaCalo of CalibrateCaloClusters in the reconstruction; default: one strip, 0.009817477/4; the cells of the other layers and the towers are 4 strips)")
+parser.add_argument("--delta-phi", type=float, default=None,
+                    help="period in phi of the position of the cluster used as input feature (deltaPhiCalo, must be the same as the property deltaPhiCalo of CalibrateCaloClusters; default: one module, 2*pi/1536; the cells are 2 modules)")
+args = parser.parse_args()
+
+if args.input:
+    readInputsFromROOT, readInputsFromCsv, readInputsFromPkl = True, False, False
+    inputFiles = {}
+    for i, f in enumerate(args.input):
+        inputFiles[f"input{i}"] = {
+            "basedir": _os.path.dirname(_os.path.abspath(f)),
+            "filename": _os.path.basename(f),
+            "usechain": len(_glob.glob(f)) > 1 or any(c in f for c in "*?["),
+        }
+if args.clusters:
+    clusterCollections = args.clusters
+if args.suffix is not None:
+    suffix = args.suffix
+if args.data_dir is not None:
+    csvpklDir = args.data_dir
+if args.device is not None:
+    useGPU = args.device == "gpu"
+if args.extra_features is not None:
+    useExtraFeatures = args.extra_features
+
+# -------------------------------------------------------------------------------------------
+
+
 # list of branches to read in each TTree for given cluster collection
 
 def branchesToRead(clusters):
@@ -199,6 +249,16 @@ def getAlgSettingsFromLogFile(algName, logFileName):
 # info from there
 
 def getClusterInfo(inputFile, clusters):
+    # log file given on the command line
+    if args.log:
+        options = getAlgSettingsFromLogFile("CreatePositionedECalBarrelCells", args.log)
+        options.update(getAlgSettingsFromLogFile("Create"+clusters, args.log))
+        for key, value in options.items():
+            print(f"{key}: {value}")
+        return
+    if args.input:
+        print("No log file given with --log: the settings of the clustering are not printed")
+        return
     # find logfile
     logFile = ""
     fileName = inputFiles[inputFile]["filename"].removesuffix(".root")
@@ -263,6 +323,10 @@ import glob
 
 deltaThetaCalo = 0.009817477 / 4
 deltaPhiCalo = 2 * pi / 1536
+if args.delta_theta is not None:
+    deltaThetaCalo = args.delta_theta
+if args.delta_phi is not None:
+    deltaPhiCalo = args.delta_phi
 
 # -------------------------------------------------------------------------------------------
 
