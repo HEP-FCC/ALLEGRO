@@ -48,6 +48,13 @@ python train_calibration.py
 
 ```
 
+The model is saved in `models/` in LightGBM (`.txt`) and ONNX (`.onnx`) format, together with a `.json` file describing
+how it was produced, to make it reproducible: input features and target, date, user, command, git commit of ALLEGRO,
+versions of the python packages, parameters and results of the training, and for each input sample the files, the
+number of events, the particle types and the ranges of true energy and theta, the Key4hep stack, the versions of
+EDM4hep and podio, the detector, the options of the algorithms and tools making the cells and the clusters, and all
+the Gaudi options of the reconstruction (read from the `configuration_metadata` of the input files).
+
 To evaluate the BDT performance: adjust properly the parameters in the script `test_calibration.py`, and execute it with:
 
 ```

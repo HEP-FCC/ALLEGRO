@@ -35,6 +35,8 @@ useExtraFeatures = True                                        # use also cluste
 useLongitudinalVars = False                                    # if true will also use longitudinal barycenter and RMS as extra variables
 # objective = ''                                               # The regression objective - choose one below
 objective = 'regression_l1'                                    # minimises the bias
+testFraction = 0.15                                            # fraction of the events used for testing
+splitSeed = 12345                                              # seed of the split in training and testing events (None: random)
 # objective = 'regression_l2'                                  # in principle should be better for resolution, but seems to have no impact on it, and bias is worse
 # objective = 'huber'                                          # in principle should be better for resolution, but seems to have no impact on it, and bias is worse
 # objective = 'mape'                                           # wont convert to onnx
@@ -331,6 +333,153 @@ if args.delta_phi is not None:
 # -------------------------------------------------------------------------------------------
 
 
+# information about the training, saved in a json file next to the model, to know how the model was produced
+# (filled by readROOTFileIntoPandas, fillVectorsFromROOTBranches and train)
+
+import json
+import sys
+import hashlib
+import datetime
+import getpass
+import platform
+import socket
+
+trainingInfo = {}
+currentSampleStats = None
+
+# generic properties of the Gaudi components, not saved among the options of the clustering
+genericGaudiProperties = {
+    "Asynchronous", "AuditExecute", "AuditFinalize", "AuditInitialize", "AuditReinitialize", "AuditRestart",
+    "AuditStart", "AuditStop", "AuditTools", "Cardinality", "Enable", "ErrorMax", "ExtraInputs", "ExtraOutputs",
+    "FilterCircularDependencies", "MonitorService", "NeededResources", "OutputLevel", "RegisterForContextService",
+    "Timeline", "maxDebugPrint", "AuditBeginRun", "AuditEndRun",
+}
+
+
+def readReconstructionMetadata(filename, clusters):
+    """Key4hep stack, versions and Gaudi options of the reconstruction, from the configuration_metadata frame that
+    k4FWCore writes in the output files. Returns the information and the full list of options (None if missing)."""
+    f = uproot.open(filename)
+    info = {}
+    if "podio_metadata" in f:
+        t = f["podio_metadata"]
+        for name in ("edm4hep___Version", "PodioBuildVersion"):
+            if name in t:
+                v = t[name].arrays(library="np", entry_stop=1)
+                info[name.replace("___Version", "_version").replace("BuildVersion", "_version")] = \
+                    ".".join(str(v[k][0]) for k in ("major", "minor", "patch"))
+    if "configuration_metadata" not in f:
+        info["warning"] = "no configuration_metadata in the file"
+        return info, None
+    t = f["configuration_metadata"]
+    keys = list(t["GPStringKeys"].array(library="np", entry_stop=1)[0])
+    values = [list(v) for v in t["GPStringValues"].array(library="np", entry_stop=1)[0]]
+    metadata = dict(zip(keys, values))
+    info["key4hep_stack"] = metadata.get("key4hepstack", [""])[0]
+    options = {}
+    for line in metadata.get("gaudiConfigOptions", []):
+        key, sep, value = line.rstrip("\n").partition(" = ")
+        if sep:
+            options[key] = value[1:-1] if value.startswith('"') and value.endswith('"') else value
+    info["detector"] = options.get("GeoSvc.detectors")
+
+    # options of the components making the cells and the clusters: the algorithms making, augmenting, calibrating or
+    # correcting the cluster collection, the algorithm making the positioned cells of its detector, and the tools they
+    # use (followed through the options with values Type/Name)
+    cellAlgorithm = "CreatePositionedECalBarrelCells" if clusters[0:3] == "EMB" else "CreatePositionedECalEndcapCells"
+    components = {prefix + clusters for prefix in ("Create", "Augment", "Calibrate", "Correct")} | {cellAlgorithm}
+
+    def component(key):
+        # the algorithm or the public tool an option belongs to
+        parts = key.split(".")
+        return parts[1] if parts[0] == "ToolSvc" and len(parts) > 2 else parts[0]
+
+    def select(names):
+        return {k: v for k, v in options.items()
+                if component(k) in names and k.rpartition(".")[2] not in genericGaudiProperties}
+    selected = select(components)
+    for _ in range(3):
+        tools = set()
+        for v in selected.values():
+            tools.update(re.findall(r"[\w:<>]+/(\w+)", v))
+        # private tools are options of the algorithm (Alg.Tool.property), already selected; public ones are in ToolSvc
+        selected.update(select(tools))
+    info["clustering_options"] = dict(sorted(selected.items()))
+    return info, options
+
+
+def gitInfo(path):
+    """Commit of the git repository containing path, and whether it has local changes"""
+    def git(*args):
+        return subprocess.run(["git", "-C", path] + list(args), capture_output=True, text=True).stdout.strip()
+    commit = git("rev-parse", "HEAD")
+    if not commit:
+        return None
+    return {"commit": commit, "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
+            "local_changes": git("status", "--porcelain", "--", ".") != ""}
+
+
+def packageVersions():
+    versions = {"python": platform.python_version()}
+    for module in ("lightgbm", "onnx", "onnxmltools", "skl2onnx", "numpy", "pandas", "sklearn", "uproot"):
+        try:
+            versions[module] = __import__(module).__version__
+        except Exception:
+            pass
+    return versions
+
+
+def inputFeatureNames(clusters, nLayers):
+    detector = "EMB" if clusters[0:3] == "EMB" else "EMEC"
+    names = [f"energy_fraction_{detector}_layer_{i}" for i in range(nLayers)]
+    if useExtraFeatures:
+        names += ["theta", "theta / deltaThetaCalo % 1", "phi / deltaPhiCalo % 1"]
+        if useLongitudinalVars:
+            names += ["longitudinal_barycenter", "longitudinal_rms"]
+    return names + ["energy"]
+
+
+def writeTrainingInfo(jsonFile, clusters, nLayers, emin, emax, params, model, nTrain, nTest, metrics):
+    """Write in jsonFile the information needed to know how the model was produced, and to reproduce it"""
+    allOptions = trainingInfo.pop("_allOptions", {})
+    info = {
+        "model": {
+            "clusters": clusters,
+            "inputs": inputFeatureNames(clusters, nLayers),
+            "target": "log(E_true / E_cluster)" if targetUsesLog else "E_true / E_cluster",
+            "deltaThetaCalo": deltaThetaCalo,
+            "deltaPhiCalo": deltaPhiCalo,
+            "selection": (f"highest-energy cluster with {emin} <= E_cluster <= {emax} GeV and "
+                          "0.3 <= E_cluster / E_true <= 1.7, E_true: energy of the highest-momentum MC particle"),
+        },
+        "training": {
+            "date": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+            "user": getpass.getuser(),
+            "host": socket.getfqdn(),
+            "command": [sys.executable] + sys.argv,
+            "working_directory": os.getcwd(),
+            "script": os.path.abspath(__file__),
+            "git": gitInfo(os.path.dirname(os.path.abspath(__file__))),
+            "versions": packageVersions(),
+            "lightgbm_parameters": {k: sorted(v) if isinstance(v, set) else v for k, v in params.items()},
+            "use_weights": useWeights,
+            "test_split": {"fraction": testFraction, "random_state": splitSeed},
+            "best_iteration": model.best_iteration,
+            "number_of_trees": model.num_trees(),
+            "events": {"train": nTrain, "test": nTest},
+            "test_metrics": metrics,
+        },
+        "samples": trainingInfo.get("samples", []),
+        # options of the reconstruction of the samples, identified by their md5 in samples
+        "reconstruction_options": allOptions,
+    }
+    with open(jsonFile, "w") as f:
+        json.dump(info, f, indent=2)
+    print("Information about the training saved in", jsonFile)
+
+# -------------------------------------------------------------------------------------------
+
+
 # function for plotting the importance ranking of the input features
 
 def plotImp(model, X, num=20, fig_size=(40, 20), clusters="clusters", imptype="gain", emin=0, emax=1000):
@@ -381,7 +530,7 @@ def fillVectorsFromROOTBranches(arr, emin, emax, nLayers, inputFeaturePositions)
     px_part = arr['MCParticles/MCParticles.momentum.x']
     py_part = arr['MCParticles/MCParticles.momentum.y']
     pz_part = arr['MCParticles/MCParticles.momentum.z']
-    # pdg_part = arr['MCParticles/MCParticles.PDG']
+    pdg_part = arr['MCParticles/MCParticles.PDG']
     # status_part = arr['MCParticles/MCParticles.generatorStatus']
     e_clusters = arr[f'Augmented{clusters}/Augmented{clusters}.energy']
     x_clusters = arr[f'Augmented{clusters}/Augmented{clusters}.position.x']
@@ -393,6 +542,8 @@ def fillVectorsFromROOTBranches(arr, emin, emax, nLayers, inputFeaturePositions)
     # calculate particle energy
     nentries = len(px_part)
     p_part = np.zeros(nentries)
+    pdg_true = np.zeros(nentries, dtype=int)
+    theta_true = np.zeros(nentries)
     # px_part, py_part, pz_part are lists of numpy arrays..
     for entry in range(nentries):
         # this selects photons/electrons (depending on PDG) with status=1
@@ -402,6 +553,9 @@ def fillVectorsFromROOTBranches(arr, emin, emax, nLayers, inputFeaturePositions)
         # this selects the highest momentum particle
         p = np.sqrt(px_part[entry]**2 + py_part[entry]**2 + pz_part[entry]**2)
         p_part[entry] = np.max(p)
+        imax = np.argmax(p)
+        pdg_true[entry] = pdg_part[entry][imax]
+        theta_true[entry] = acos(pz_part[entry][imax] / p[imax]) if p[imax] > 0 else 0.
 
     # find out highest energy cluster and retrieve its energy, energy fractions per layer, theta, phi
     e_cl = np.zeros(nentries)
@@ -438,6 +592,20 @@ def fillVectorsFromROOTBranches(arr, emin, emax, nLayers, inputFeaturePositions)
             # drop events with poorly reconstructed e_true/e_cl (not in 0.4..1.7)
             if e_cl[entry] / p_part[entry] < 0.3 or e_cl[entry] / p_part[entry] > 1.7:
                 keep[entry] = 0
+
+    # statistics of the particles of the sample, for the information about the training
+    if currentSampleStats is not None:
+        st = currentSampleStats
+        st["events_read"] += int(nentries)
+        st["events_selected"] += int(np.sum(keep))
+        for pdg, n in zip(*np.unique(pdg_true, return_counts=True)):
+            st["particles"][str(pdg)] = st["particles"].get(str(pdg), 0) + int(n)
+        if nentries > 0:
+            st["energy_true_GeV"] = [min(st["energy_true_GeV"][0], float(np.min(p_part))),
+                                     max(st["energy_true_GeV"][1], float(np.max(p_part)))]
+            theta_deg = np.degrees(theta_true)
+            st["theta_true_deg"] = [min(st["theta_true_deg"][0], float(np.min(theta_deg))),
+                                    max(st["theta_true_deg"][1], float(np.max(theta_deg)))]
 
     # remove events without clusters
     p_part = p_part[keep]
@@ -490,6 +658,27 @@ def readROOTFileIntoPandas(inputfile, clusters, emin, emax, nLayers):
         print("Some input feature could not be found, quitting..")
         exit(0)
     print("All input features found in metadata, in positions:", inputFeaturePositions)
+
+    # information about the sample, for the json file written with the model
+    global currentSampleStats
+    fileList = sorted(glob.glob(filepath)) if usechain else [filepath]
+    recoInfo, allOptions = readReconstructionMetadata(fileList[0], clusters)
+    if allOptions is not None:
+        optionsText = json.dumps(allOptions, sort_keys=True)
+        md5 = hashlib.md5(optionsText.encode()).hexdigest()
+        trainingInfo.setdefault("_allOptions", {})[md5] = allOptions
+        recoInfo["all_options_md5"] = md5
+    currentSampleStats = {"events_read": 0, "events_selected": 0, "particles": {},
+                          "energy_true_GeV": [float("inf"), float("-inf")],
+                          "theta_true_deg": [float("inf"), float("-inf")]}
+    trainingInfo.setdefault("samples", []).append({
+        "name": inputfile,
+        "files": [{"path": f, "size": os.path.getsize(f),
+                   "modified": datetime.datetime.fromtimestamp(os.path.getmtime(f)).isoformat(timespec="seconds")}
+                  for f in fileList],
+        "statistics": currentSampleStats,
+        "reconstruction": recoInfo,
+    })
 
     # open root file and read events tree
     print("Reading events from ROOT file(s)", filepath)
@@ -572,6 +761,10 @@ def readROOTFileIntoPandas(inputfile, clusters, emin, emax, nLayers):
 def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType='sk-random', nLayers=11):
 
     print("\nTraining for cluster collection: %s" % clusters)
+    trainingInfo.clear()
+    if not readInputsFromROOT:
+        trainingInfo["samples"] = [{"note": "input features and target read from csv/pkl files in " +
+                                    os.path.abspath(csvpklDir)}]
 
     # read info about clustering settings from log and ROOT files
     # read features and target from npy or ROOT files
@@ -632,7 +825,7 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
 
     # define feature variables
     X = df.drop('f%d' % nInputs, axis=1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testFraction, random_state=splitSeed)
 
     # define weights for training and testing (weight more events with lower E)
     if useWeights:
@@ -853,6 +1046,10 @@ def train(clusters='EMBCaloClusters', emin=0, emax=1000, optimise=False, optType
         print("RMSE: %.6f" % rmse)
         mae = mean_absolute_error(y_test, y_pred)
         print("MAE: %.6f" % mae)
+
+        # save the information about the training next to the model
+        writeTrainingInfo('models/' + outfile + '.json', clusters, nLayers, emin, emax, params, model,
+                          len(X_train), len(X_test), {"mse": mse, "rmse": rmse, "mae": mae})
 
         # plot the feature importance
         plotImp(model, X, clusters=clusters, emin=emin, emax=emax)
