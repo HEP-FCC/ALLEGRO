@@ -21,10 +21,12 @@ saveDataToPkl = True                                           # save data to pi
 # csvpklDir = "../fullsim/run/test/training_reconstruction_smallSWclusters_noise"
 # csvpklDir = "../../run/paper_LArPb/training_reconstruction"
 # csvpklDir = "../../run/paper_LKrW/training_reconstruction_small"
-csvpklDir = "../../run/paper_LKrW/training_reconstruction_big"
+# csvpklDir = "../../run/paper_LKrW/training_reconstruction_big"
+csvpklDir = "../../run/paper_LArPb/training_reconstruction_big"
 # csvpklDir = "../../run/paper_LArPb/training_reconstruction_endcap_200k_topo"
 # suffix = ""                                                    # suffix to append to model files
-suffix = "_LKrW"
+# suffix = "_LKrW"
+suffix = "_LArPb"
 doTraining = True                                              # if false, only plot Ereco/Etrue
 saveModelToONNX = True                                         # export model (also) to onnx portable format
 particle_PDG = 22                                              # PDGid of particle (not used - assumes particle with highest p is the good one)
@@ -62,7 +64,9 @@ inputFiles = {
         # "usechain": False,
         # endcap
         # "basedir": "../../run/paper_LArPb/training_reconstruction_endcap_300k_0_22/",
-        "basedir": "../../run/paper_LKrW/training_reconstruction_big/",
+        # "basedir": "../../run/paper_LKrW/training_reconstruction_big/",
+        # 0.1-105 GeV, theta 40-140 degrees, 300k photons
+        "basedir": "../../run/paper_LArPb/training_reconstruction_big/",
         "filename": "production_reconstruction_particle_gamma.root",
         "usechain": False
     },
@@ -72,7 +76,9 @@ inputFiles = {
         #"usechain": True,
         # 0.1-105 GeV
         # "basedir": "../../run/paper_LArPb/training_reconstruction/",
-        "basedir": "../../run/paper_LKrW/training_reconstruction_big2/",
+        # "basedir": "../../run/paper_LKrW/training_reconstruction_big2/",
+        # 105-200 GeV, theta 40-140 degrees, 10k photons
+        "basedir": "../../run/paper_LArPb/training_reconstruction_small_highE/",
         "filename": "production_reconstruction_particle_gamma.root",
         "usechain": False
         # endcap

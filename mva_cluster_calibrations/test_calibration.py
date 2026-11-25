@@ -34,7 +34,8 @@ clusterCollections = [                                   # collections for which
     # 'EMECCaloClusters',
     # 'EMECCaloTopoClusters',
 ]
-label = "EMB_calo_withnoise"
+# label = "EMB_calo_withnoise"
+label = "EMB_calo_wo_noise"
 # label = "EMB_calo_topo_w_wo_noise"
 # label = "EMB_calo_topo_wo_noise"
 # label = "EMEC_calo_wo_noise"
@@ -50,10 +51,10 @@ calibrationFiles = [
 # basedir = "../fullsim/run/test/clusters_with_noise/"        # directory where the input files are
 # basedir = "../fullsim/run/test/clusters_nothreshold_topo/"  # directory where the input files are
 # basedir = "../fullsim/run/test/clusters_smallSWcluster/"    # directory where the input files are
-# basedir = "../../run/paper_LArPb/clusters/"
-suffix=""
-basedir = "../../run/paper_LKrW/clusters/"
-suffix="_LKrW"
+# basedir = "../../run/paper_LKrW/clusters/"
+# suffix="_LKrW"
+basedir = "../../run/paper_LArPb/clusters/"
+suffix="_LArPb"
 
 particle = 'gamma'                                       # particle type
 # particle = 'e-'                                        # particle type
@@ -70,8 +71,8 @@ energies = [                                             # energy points (in MeV
     50000,
     75000,
     100000,
-#     135000,
-#     180000
+    135000,
+    180000
 ]
 useAK = False                                            # true for awkward, false for numpy
 modelFormat = 'onnx'                                     # use model stored in onnx or lgbm format
